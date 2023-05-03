@@ -1,0 +1,5 @@
+use number_diff::Elementary::*;
+use std::{sync::Arc, f64::consts::E};
+fn main() {
+    let enum_func = Pow(Arc::new(Con(E)), Mul(Arc::new(Con(-1.)), Arc::new(Pow(Arc::new(X), Arc::new(Con(2.))))));
+}
