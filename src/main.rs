@@ -5,12 +5,12 @@ use std::{
 };
 
 fn main() {
-    let enum_func = Atan(Arc::new(Asin(Arc::new(X))));
+    let enum_func = Abs(Arc::new(Asin(Arc::new(X))));
     let derivative = enum_func.differentiate();
     println!("{derivative:?}");
     let func = derivative.call();
 
-    println!("{}", func(0.5));
+    println!("{}", func(0.9));
 }
 
 type Func = Box<dyn Fn(f64) -> f64 + 'static>;
@@ -35,6 +35,8 @@ enum Elementary {
     Pow(Arc<Elementary>, Arc<Elementary>), // of the type f(x)^g(x)
     Log(Arc<Elementary>, Arc<Elementary>), // of the type logb(f(x)) where b = g(x)
 
+    // Absolute value function 
+    Abs(Arc<Elementary>),
     // Constant function
     Con(f64), // of the type c
 
@@ -61,6 +63,8 @@ impl Elementary {
             Pow(func1, func2) => (*func1).clone().call()(x).powf((*func2).clone().call()(x)),
             Log(func1, func2) => (*func2).clone().call()(x).log((*func1).clone().call()(x)),
 
+            Abs(func) => (*func).clone().call()(x).abs(),
+        
             Con(numb) => numb,
             X => f()(x),
         })
@@ -188,6 +192,8 @@ impl Elementary {
                     Arc::new(Con(2.)),
                 )),
             ),
+
+            Abs(func) => Div(Arc::new(Mul(func.clone(), Arc::new((*func).clone().differentiate()))), Arc::new(Abs(func))),
             Con(_) => Con(0.),
             X => Con(1.),
         }
