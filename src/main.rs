@@ -106,8 +106,8 @@ impl Elementary {
                     Arc::new((*func2).clone().differentiate())))))))), // g'(x)
             // f(x)^(g(x) - 1) (g(x) f'(x) + f(x) log(f(x)) g'(x))
             Log(func1, func2) => Div(Arc::new(Sub(
-                Arc::new(Mul(Arc::new(Log(Arc::new(Con(E)), func1.clone())), Arc::new((*func2).clone().differentiate()))), 
-                Arc::new(Mul(Arc::new(Log(Arc::new(Con(E)), func2.clone())), Arc::new((*func1).clone().differentiate()))))), 
+                Arc::new(Div(Arc::new(Mul(Arc::new(Log(Arc::new(Con(E)), func1.clone())), Arc::new((*func2).clone().differentiate()))), func2.clone())), 
+                Arc::new(Div(Arc::new(Mul(Arc::new(Log(Arc::new(Con(E)), func2.clone())), Arc::new((*func1).clone().differentiate()))), func1.clone())))),
                 Arc::new(Pow(Arc::new(Log(Arc::new(Con(E)), func1.clone())), Arc::new(Con(2.))))),
             Con(_) => Con(0.),
             X => Con(1.),
