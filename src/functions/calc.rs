@@ -66,6 +66,11 @@ impl Elementary {
 
 pub struct Function {
     pub func: Elementary,
-    callable: Option<Func>,
+}
+
+impl Function {
+    pub fn new(func: Elementary) -> Self {
+        Self { func }
+    }
 }
 
