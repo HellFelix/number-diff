@@ -1,5 +1,7 @@
-#![feature(unboxed_closures)]
-#![feature(fn_traits)]
+#![cfg_attr(feature = "nightly", feature(unboxed_closures))]
+#![cfg_attr(feature = "nightly", feature(fn_traits))]
+#![cfg_attr(feature = "nightly", feature(tuple_trait))]
+
 
 mod functions;
 pub use crate::functions::calc::Elementary;

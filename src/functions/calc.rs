@@ -65,18 +65,7 @@ impl Elementary {
 }
 
 pub struct Function {
-    rep: Elementary,
-    func: Func,
+    pub func: Elementary,
+    callable: Option<Func>,
 }
-impl Function {
-    pub fn new(rep: Elementary) -> Self {
-        let func = rep.clone().call();
-        Self { rep, func }
-    }
-}
-impl FnOnce<()> for Function {
-    type Output = ();
-    extern "rust-call" fn call_once(self, args: ()) -> Self::Output {
-        println!("Function stuct called");
-    }
-}
+
