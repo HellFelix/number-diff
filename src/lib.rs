@@ -1,9 +1,8 @@
 mod functions;
-pub use functions::Elementary;
+pub use crate::functions::calc::Elementary;
 
-mod differentiation;
+pub use crate::functions::differentiation;
 
-mod integration;
-pub use integration::integrate;
+pub use crate::functions::integration::integrate;
 
 type Func = Box<dyn Fn(f64) -> f64 + 'static>;

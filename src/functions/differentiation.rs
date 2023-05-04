@@ -5,7 +5,7 @@ use std::{
 };
 impl Elementary {
     pub fn differentiate(self) -> Self {
-        match self.clone() {
+        match self {
             Sin(func) => Mul(
                 Arc::new(Cos(func.clone())),
                 Arc::new((*func).clone().differentiate()),
