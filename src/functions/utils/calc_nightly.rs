@@ -1,8 +1,8 @@
-use crate::Function;
 use crate::Elementary;
+use crate::Function;
 
 impl FnOnce<(f64,)> for Function {
-    type Output = f64; 
+    type Output = f64;
     extern "rust-call" fn call_once(self, args: (f64,)) -> Self::Output {
         self.func.clone().call()(args.0)
     }

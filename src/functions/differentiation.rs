@@ -1,8 +1,5 @@
 use crate::Elementary::{self, *};
-use std::{
-    f64::consts::E,
-    sync::Arc,
-};
+use std::{f64::consts::E, sync::Arc};
 impl Elementary {
     pub fn differentiate(self) -> Self {
         match self {
@@ -127,7 +124,10 @@ impl Elementary {
                 )),
             ),
 
-            Abs(func) => Div(Arc::new(Mul(func.clone(), Arc::new((*func).clone().differentiate()))), Arc::new(Abs(func))),
+            Abs(func) => Div(
+                Arc::new(Mul(func.clone(), Arc::new((*func).clone().differentiate()))),
+                Arc::new(Abs(func)),
+            ),
             Con(_) => Con(0.),
             X => Con(1.),
         }

@@ -1,7 +1,7 @@
-use number_diff::{Elementary::*, integrate, Function};
-use std::{sync::Arc, f64::consts::E};
+use number_diff::test_parse;
 fn main() {
-    let func = Function::new(X);
+    let binding = String::from("sin(exp(x)) + cos(x)");
+    let res = test_parse(&binding);
 
-    println!("{}", func(5.));
+    println!("{res:?}");
 }
