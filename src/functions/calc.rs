@@ -11,7 +11,7 @@ fn f() -> Func {
     Box::new(move |x| x)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Elementary {
     // Standard trig functions
     Sin(Arc<Elementary>), // of the type sin(f(x))

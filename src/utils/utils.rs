@@ -9,6 +9,6 @@ pub use crate::functions::integration::integrate;
 
 pub use crate::functions::calc::Function;
 
-pub fn test_parse<'a>(value: &'a String) -> Vec<&'a str> {
+pub fn test_parse<'a>(value: &'a String) -> Elementary {
     Elementary::test_from(&value)
 }
