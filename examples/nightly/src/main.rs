@@ -1,7 +1,12 @@
-use number_diff::test_parse;
-fn main() {
-    let binding = String::from("x*x^sin(x)*x");
-    let res = test_parse(&binding);
+use std::f64::consts::PI;
 
-    println!("{res:?}");
+use number_diff::{cos, sinh, Function, X};
+fn main() {
+    let elem = sinh(cos(X));
+
+    let mut func = Function::new(elem);
+
+    func.differentiate();
+
+    println!("{}", func(1.));
 }

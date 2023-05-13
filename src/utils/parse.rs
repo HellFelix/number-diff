@@ -1,13 +1,14 @@
-use std::sync::Arc;
+use std::{f64::consts::E, sync::Arc};
 
 use crate::Elementary::{self, *};
 
-impl Elementary {
-    pub fn test_from<'a>(value: &'a String) -> Self {
+impl<'a> From<&'a String> for Elementary {
+    fn from(value: &'a String) -> Self {
         Self::to_elementary(value)
     }
-
-    fn split_function<'a>(value: &'a String) -> Vec<&'a str> {
+}
+impl Elementary {
+    fn split_function(value: &str) -> Vec<&str> {
         let mut interp_slice: Vec<&str> = value.split("").collect();
         // remove the first and last element because they are just empty string slices
         interp_slice.remove(0);
@@ -61,22 +62,19 @@ impl Elementary {
         }
 
         if chunks.is_empty() {
-            chunks.push(&value[..]);
+            chunks.push(value);
         }
 
         chunks
     }
 
-    fn to_elementary<'a>(string: &String) -> Self {
+    fn to_elementary(string: &str) -> Self {
         let strings = Self::split_function(string);
 
         let mut functions: Vec<ElemRef> = strings
             .clone()
             .iter()
-            .map(|s| {
-                let val = Self::parse_function(s).unwrap();
-                val
-            })
+            .map(|s| Self::parse_function(s).unwrap())
             .collect();
 
         // order of operations
@@ -91,18 +89,15 @@ impl Elementary {
                     if i >= functions.len() {
                         continue;
                     }
-                    match &functions[i] {
-                        ElemRef::Pow => {
-                            let replacement_func = ElemRef::Function(Pow(
-                                Arc::new(functions[i - 1].clone().convert().unwrap()),
-                                Arc::new(functions[i + 1].clone().convert().unwrap()),
-                            ));
-                            functions.remove(i + 1);
-                            functions.remove(i);
-                            functions.remove(i - 1);
-                            functions.insert(i - 1, replacement_func);
-                        }
-                        _ => (),
+                    if functions[i] == ElemRef::Pow {
+                        let replacement_func = ElemRef::Function(Pow(
+                            Arc::new(functions[i - 1].clone().convert().unwrap()),
+                            Arc::new(functions[i + 1].clone().convert().unwrap()),
+                        ));
+                        functions.remove(i + 1);
+                        functions.remove(i);
+                        functions.remove(i - 1);
+                        functions.insert(i - 1, replacement_func);
                     }
                 }
 
@@ -130,7 +125,11 @@ impl Elementary {
             }
         }
 
-        functions.pop().expect("empty").convert().unwrap()
+        functions
+            .pop()
+            .expect("Couldn't find a function to parse")
+            .convert()
+            .unwrap()
     }
 
     fn parse_function(string: &str) -> Option<ElemRef> {
@@ -164,12 +163,32 @@ impl Elementary {
                 let cont = cont[1..cont.len() - 1].to_string();
 
                 match func {
-                    "sin" => Some(ElemRef::Function(Sin(Arc::new(Self::to_elementary(
-                        &cont.to_string(),
+                    "sin" => Some(ElemRef::Function(Sin(Arc::new(Self::to_elementary(&cont))))),
+                    "cos" => Some(ElemRef::Function(Cos(Arc::new(Self::to_elementary(&cont))))),
+                    "tan" => Some(ElemRef::Function(Tan(Arc::new(Self::to_elementary(&cont))))),
+                    "asin" => Some(ElemRef::Function(Asin(Arc::new(Self::to_elementary(
+                        &cont,
                     ))))),
-                    "cos" => Some(ElemRef::Function(Cos(Arc::new(Self::to_elementary(
-                        &cont.to_string(),
+                    "acos" => Some(ElemRef::Function(Acos(Arc::new(Self::to_elementary(
+                        &cont,
                     ))))),
+                    "atan" => Some(ElemRef::Function(Atan(Arc::new(Self::to_elementary(
+                        &cont,
+                    ))))),
+                    "sinh" => Some(ElemRef::Function(Sinh(Arc::new(Self::to_elementary(
+                        &cont,
+                    ))))),
+                    "cosh" => Some(ElemRef::Function(Cosh(Arc::new(Self::to_elementary(
+                        &cont,
+                    ))))),
+                    "tanh" => Some(ElemRef::Function(Tanh(Arc::new(Self::to_elementary(
+                        &cont,
+                    ))))),
+                    "ln" => Some(ElemRef::Function(Log(
+                        Arc::new(Con(E)), //ln is equivalent to log base e of its contents
+                        Arc::new(Self::to_elementary(&cont)),
+                    ))),
+                    "abs" => Some(ElemRef::Function(Abs(Arc::new(Self::to_elementary(&cont))))),
                     _ => None,
                 }
             }
@@ -177,6 +196,8 @@ impl Elementary {
     }
 }
 
+// all instances of an operation must be handled before the parsing method can move on to the next.
+// This is to ensure that the order of operations is being upheld
 fn iterate_operation(functions: &mut Vec<ElemRef>, operation: ElemRef) {
     if functions.contains(&operation) {
         for i in 0..functions.len() {
@@ -184,7 +205,7 @@ fn iterate_operation(functions: &mut Vec<ElemRef>, operation: ElemRef) {
                 continue;
             }
 
-            if &functions[i] == &operation {
+            if functions[i] == operation {
                 let replacement_func = match operation {
                     ElemRef::Mul => ElemRef::Function(Mul(
                         Arc::new(functions[i - 1].clone().convert().unwrap()),
@@ -202,11 +223,14 @@ fn iterate_operation(functions: &mut Vec<ElemRef>, operation: ElemRef) {
                         Arc::new(functions[i - 1].clone().convert().unwrap()),
                         Arc::new(functions[i + 1].clone().convert().unwrap()),
                     )),
-                    _ => unimplemented!(),
+                    _ => unimplemented!("No such operation"), // this point shouldn't be reached
                 };
+
+                // the operation itself as well as the functions surrounding it must be removed
                 functions.remove(i + 1);
                 functions.remove(i);
                 functions.remove(i - 1);
+                // the combined new function is inserted in the place of the previous functions
                 functions.insert(i - 1, replacement_func);
             }
         }
@@ -232,14 +256,18 @@ impl ElemRef {
     }
 }
 
+// splits the provided string at the first index where the specified identifier is found.
+// if the identifier is not found, the string will be split at index 0
 fn split_first<'a>(string: &'a String, indentifier: &'a str) -> (&'a str, &'a str) {
-    // find index of first insance of the identifier
     let slice: Vec<&str> = string.split("").collect();
 
     let mut index = 0;
-    for i in 0..string.len() {
-        if slice[i] == indentifier {
+    // find index of first insance of the identifier
+
+    for (i, s) in slice.iter().enumerate().take(string.len()) {
+        if *s == indentifier {
             index = i;
+            break;
         }
     }
 

@@ -1,5 +1,6 @@
 use crate::Elementary::*;
 use std::{
+    f64::consts::E,
     ops::{Add, Div, Mul, Sub},
     sync::Arc,
 };
@@ -23,6 +24,10 @@ pub enum Elementary {
     Acos(Arc<Elementary>), // of the type arccos(f(x))
     Atan(Arc<Elementary>), // of the type arctan(f(x))
 
+    Sinh(Arc<Elementary>), // of the type sinh(f(x))
+    Cosh(Arc<Elementary>), // of the type cosh(f(x))
+    Tanh(Arc<Elementary>), // of the type tanh(f(x))
+
     // Standard operations
     Add(Arc<Elementary>, Arc<Elementary>), // of the type f(x) + g(x)
     Sub(Arc<Elementary>, Arc<Elementary>), // of the type f(x) - g(x)
@@ -38,11 +43,11 @@ pub enum Elementary {
 
     X, // unit function f(x) = x. Any function dependant on a variable must include this
        // function as it returns a function of type Func which returns the input value.
+       // X will represent the independant variable in each function
 }
 impl Elementary {
     pub fn call(self) -> Func {
         Box::new(move |x| match self.clone() {
-            // standard trig functions
             Sin(func) => (*func).clone().call()(x).sin(),
             Cos(func) => (*func).clone().call()(x).cos(),
             Tan(func) => (*func).clone().call()(x).tan(),
@@ -50,6 +55,14 @@ impl Elementary {
             Asin(func) => (*func).clone().call()(x).asin(),
             Acos(func) => (*func).clone().call()(x).acos(),
             Atan(func) => (*func).clone().call()(x).atan(),
+
+            Sinh(func) => {
+                (E.powf((*func).clone().call()(x)) - E.powf(-(*func).clone().call()(x))) / 2.
+            }
+            Cosh(func) => {
+                (E.powf((*func).clone().call()(x)) + E.powf(-(*func).clone().call()(x))) / 2.
+            }
+            Tanh(func) => Sinh(func.clone()).call()(x) / Cosh(func).call()(x),
 
             Add(func1, func2) => (*func1).clone().call()(x) + (*func2).clone().call()(x),
             Sub(func1, func2) => (*func1).clone().call()(x) - (*func2).clone().call()(x),
@@ -62,11 +75,12 @@ impl Elementary {
             Abs(func) => (*func).clone().call()(x).abs(),
 
             Con(numb) => numb,
+
             X => f()(x),
         })
     }
 }
-// operation implementations for Elementary
+// operation implementations for Elementary enum
 impl Add for Elementary {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
@@ -92,6 +106,15 @@ impl Div for Elementary {
     }
 }
 
+// operation implementations for Elementary enum (with constants)
+impl Add<f64> for Elementary {
+    type Output = Self;
+    fn add(self, rhs: f64) -> Self::Output {
+        Self::Add(Arc::new(self), Arc::new(Con(rhs)))
+    }
+}
+
+// basic trig functions
 pub fn sin(func: Elementary) -> Elementary {
     Sin(Arc::new(func))
 }
@@ -101,6 +124,8 @@ pub fn cos(func: Elementary) -> Elementary {
 pub fn tan(func: Elementary) -> Elementary {
     Tan(Arc::new(func))
 }
+
+// basic arcus functions
 pub fn asin(func: Elementary) -> Elementary {
     Asin(Arc::new(func))
 }
@@ -111,12 +136,33 @@ pub fn atan(func: Elementary) -> Elementary {
     Atan(Arc::new(func))
 }
 
+// hyperbolic functions
+pub fn sinh(func: Elementary) -> Elementary {
+    Sinh(Arc::new(func))
+}
+pub fn cosh(func: Elementary) -> Elementary {
+    Cosh(Arc::new(func))
+}
+pub fn tanh(func: Elementary) -> Elementary {
+    Tanh(Arc::new(func))
+}
+// abs function
+pub fn abs(func: Elementary) -> Elementary {
+    Abs(Arc::new(func))
+}
+
 pub struct Function {
     pub func: Elementary,
 }
 
 impl Function {
     pub fn new(func: Elementary) -> Self {
+        Self { func }
+    }
+}
+impl<'a> From<&'a String> for Function {
+    fn from(value: &'a String) -> Self {
+        let func = Elementary::from(value);
         Self { func }
     }
 }

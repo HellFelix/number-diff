@@ -1,4 +1,7 @@
-use crate::Elementary::{self, *};
+use crate::{
+    Elementary::{self, *},
+    Function,
+};
 use std::{f64::consts::E, sync::Arc};
 impl Elementary {
     pub fn differentiate(self) -> Self {
@@ -48,6 +51,18 @@ impl Elementary {
                     Arc::new(Pow(func.clone(), Arc::new(Con(2.)))),
                     Arc::new(Con(1.)),
                 )),
+            ),
+            Sinh(func) => Mul(
+                Arc::new(Cosh(func.clone())),
+                Arc::new((*func).clone().differentiate()),
+            ),
+            Cosh(func) => Mul(
+                Arc::new(Sinh(func.clone())),
+                Arc::new((*func).clone().differentiate()),
+            ),
+            Tanh(func) => Div(
+                Arc::new((*func).clone().differentiate()),
+                Arc::new(Pow(Arc::new(Cosh(func.clone())), Arc::new(Con(2.)))),
             ),
 
             Add(func1, func2) => Add(
@@ -131,5 +146,18 @@ impl Elementary {
             Con(_) => Con(0.),
             X => Con(1.),
         }
+    }
+}
+
+impl Function {
+    pub fn differentiate(&mut self) {
+        self.func = self.func.to_owned().differentiate();
+    }
+}
+
+pub fn derivative_of(input_func: &Function) -> Function {
+    let elem_derivative = input_func.func.clone().differentiate();
+    Function {
+        func: elem_derivative,
     }
 }
