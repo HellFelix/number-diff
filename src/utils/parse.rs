@@ -116,7 +116,7 @@ impl Elementary {
             if iteration >= 10000 {
                 return Err(Error::new(
                     ErrorKind::Other,
-                    String::from("Iteration limit reached while parsing funciton"),
+                    String::from("Iteration limit reached while parsing function"),
                 ));
             } else {
                 iteration += 1;
@@ -132,8 +132,8 @@ impl Elementary {
                     }
                     if functions[i] == ElemRef::Pow {
                         let replacement_func = ElemRef::Function(Pow(
-                            Arc::new(functions[i - 1].clone().convert().unwrap()),
-                            Arc::new(functions[i + 1].clone().convert().unwrap()),
+                            Arc::new(functions[i - 1].clone().convert()?),
+                            Arc::new(functions[i + 1].clone().convert()?),
                         ));
                         functions.remove(i + 1);
                         functions.remove(i);
@@ -146,23 +146,50 @@ impl Elementary {
             }
 
             // next up in the order of operations is multiplication
-            while functions.contains(&ElemRef::Mul) {
-                iterate_operation(&mut functions, ElemRef::Mul);
+            if functions.contains(&ElemRef::Mul) {
+                iterate_operation(&mut functions, ElemRef::Mul)?;
+                continue;
             }
 
+            // we also have to handle implied multiplication. Weather this is handled before or
+            // after the explicit multiplication doesn't matter since multiplication is commutative
+            // i.e. a*b = b*a
+
+            // check if there is there are any instances of implied multiplication
+            for i in 0..functions.len() {
+                if i < functions.len() - 1 {
+                    if let (ElemRef::Function(func1), ElemRef::Function(func2)) =
+                        (&functions[i], &functions[i + 1])
+                    {
+                        // multiply the two together
+                        let replacement_func = ElemRef::Function(Mul(
+                            Arc::new(func1.to_owned()),
+                            Arc::new(func2.to_owned()),
+                        ));
+
+                        // remove the functions and replace them with the multiplied function
+                        functions.remove(i + 1);
+                        functions.remove(i);
+                        functions.insert(i, replacement_func);
+                    }
+                }
+            }
             // next up is division
-            while functions.contains(&ElemRef::Div) {
-                iterate_operation(&mut functions, ElemRef::Div);
+            if functions.contains(&ElemRef::Div) {
+                iterate_operation(&mut functions, ElemRef::Div)?;
+                continue;
             }
 
             // then addition
-            while functions.contains(&ElemRef::Add) {
-                iterate_operation(&mut functions, ElemRef::Add);
+            if functions.contains(&ElemRef::Add) {
+                iterate_operation(&mut functions, ElemRef::Add)?;
+                continue;
             }
 
             // and lastly subtracion
-            while functions.contains(&ElemRef::Sub) {
-                iterate_operation(&mut functions, ElemRef::Sub);
+            if functions.contains(&ElemRef::Sub) {
+                iterate_operation(&mut functions, ElemRef::Sub)?;
+                continue;
             }
         }
 
@@ -252,7 +279,7 @@ impl Elementary {
 
 // all instances of an operation must be handled before the parsing method can move on to the next.
 // This is to ensure that the order of operations is being upheld
-fn iterate_operation(functions: &mut Vec<ElemRef>, operation: ElemRef) {
+fn iterate_operation(functions: &mut Vec<ElemRef>, operation: ElemRef) -> Result<(), Error> {
     if functions.contains(&operation) {
         for i in 0..functions.len() {
             if i >= functions.len() {
@@ -262,20 +289,20 @@ fn iterate_operation(functions: &mut Vec<ElemRef>, operation: ElemRef) {
             if functions[i] == operation {
                 let replacement_func = match operation {
                     ElemRef::Mul => ElemRef::Function(Mul(
-                        Arc::new(functions[i - 1].clone().convert().unwrap()),
-                        Arc::new(functions[i + 1].clone().convert().unwrap()),
+                        Arc::new(functions[i - 1].clone().convert()?),
+                        Arc::new(functions[i + 1].clone().convert()?),
                     )),
                     ElemRef::Div => ElemRef::Function(Div(
-                        Arc::new(functions[i - 1].clone().convert().unwrap()),
-                        Arc::new(functions[i + 1].clone().convert().unwrap()),
+                        Arc::new(functions[i - 1].clone().convert()?),
+                        Arc::new(functions[i + 1].clone().convert()?),
                     )),
                     ElemRef::Add => ElemRef::Function(Add(
-                        Arc::new(functions[i - 1].clone().convert().unwrap()),
-                        Arc::new(functions[i + 1].clone().convert().unwrap()),
+                        Arc::new(functions[i - 1].clone().convert()?),
+                        Arc::new(functions[i + 1].clone().convert()?),
                     )),
                     ElemRef::Sub => ElemRef::Function(Sub(
-                        Arc::new(functions[i - 1].clone().convert().unwrap()),
-                        Arc::new(functions[i + 1].clone().convert().unwrap()),
+                        Arc::new(functions[i - 1].clone().convert()?),
+                        Arc::new(functions[i + 1].clone().convert()?),
                     )),
                     _ => unimplemented!("No such operation"), // this point shouldn't be reached
                 };
@@ -289,6 +316,7 @@ fn iterate_operation(functions: &mut Vec<ElemRef>, operation: ElemRef) {
             }
         }
     }
+    Ok(())
 }
 
 // enum to allow operations to be described as the same type without carrying two functions
