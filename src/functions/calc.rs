@@ -160,9 +160,21 @@ impl Function {
         Self { func }
     }
 }
+impl<'a> From<&'a str> for Function {
+    fn from(value: &'a str) -> Self {
+        let func = Elementary::from(value);
+        Self { func }
+    }
+}
+impl From<String> for Function {
+    fn from(value: String) -> Self {
+        let func = Elementary::from(&value[..]);
+        Self { func }
+    }
+}
 impl<'a> From<&'a String> for Function {
     fn from(value: &'a String) -> Self {
-        let func = Elementary::from(value);
+        let func = Elementary::from(&value[..]);
         Self { func }
     }
 }

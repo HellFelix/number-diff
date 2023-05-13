@@ -1,10 +1,11 @@
+use std::io::{Error, ErrorKind};
 use std::{f64::consts::E, sync::Arc};
 
 use crate::Elementary::{self, *};
 
-impl<'a> From<&'a String> for Elementary {
-    fn from(value: &'a String) -> Self {
-        Self::to_elementary(value)
+impl<'a> From<&'a str> for Elementary {
+    fn from(value: &'a str) -> Self {
+        Self::to_elementary(value).unwrap()
     }
 }
 impl Elementary {
@@ -18,7 +19,15 @@ impl Elementary {
         let mut open_parenthesis = -1;
 
         let mut cut_index = 0;
+
+        let mut skip = 0;
         for i in 0..interp_slice.len() {
+            // if items need to be skipped (because of the implementation of constants)
+            if skip > 0 {
+                skip -= 1;
+                continue;
+            }
+
             if interp_slice[i] == "(" {
                 // this is for the first case of an opening parenthesis. Note that we cannot start
                 // at 0 since that would match the case for closing an outer parenthesis
@@ -57,6 +66,29 @@ impl Elementary {
                 } else if interp_slice[i] == "x" {
                     chunks.push(&value[cut_index..=i]);
                     cut_index = i + 1;
+                } else {
+                    // checking for constants
+                    if let Ok(_) = &value[cut_index..=i].parse::<f64>() {
+                        // find the index at which the number ends
+                        let mut last_index = i;
+                        'index: for j in i + 1..interp_slice.len() {
+                            if let Ok(_) = &value[cut_index..j].parse::<f64>() {
+                                last_index = j - 1;
+                            } else {
+                                break 'index;
+                            }
+                        }
+
+                        // push the whole number
+                        chunks.push(&value[cut_index..=last_index]);
+
+                        // the next couple of indexes must be skipped in order to avoid parsing of
+                        // individual digits
+                        skip = last_index - i;
+                        // by setting skip to the number of difference between the current index
+                        // and the index at which the number ends
+                        cut_index = last_index + 1;
+                    }
                 }
             }
         }
@@ -68,7 +100,7 @@ impl Elementary {
         chunks
     }
 
-    fn to_elementary(string: &str) -> Self {
+    fn to_elementary(string: &str) -> Result<Self, Error> {
         let strings = Self::split_function(string);
 
         let mut functions: Vec<ElemRef> = strings
@@ -77,9 +109,18 @@ impl Elementary {
             .map(|s| Self::parse_function(s).unwrap())
             .collect();
 
+        let mut iteration = 0;
+
         // order of operations
-        // note that the order of operations have to go backwards
         while functions.len() != 1 {
+            if iteration >= 10000 {
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    String::from("Iteration limit reached while parsing funciton"),
+                ));
+            } else {
+                iteration += 1;
+            }
             // first in the order of operations is powers (seeing as parentheses are handled as a
             // separate case)
             if functions.contains(&ElemRef::Pow) {
@@ -129,10 +170,9 @@ impl Elementary {
             .pop()
             .expect("Couldn't find a function to parse")
             .convert()
-            .unwrap()
     }
 
-    fn parse_function(string: &str) -> Option<ElemRef> {
+    fn parse_function(string: &str) -> Result<ElemRef, Error> {
         let mut string = string.to_lowercase();
 
         // unwrap potential parentheses
@@ -140,20 +180,23 @@ impl Elementary {
             while &string[..1] == "(" {
                 string = string[1..string.len() - 1].to_string();
             }
-            return Some(ElemRef::Function(Self::to_elementary(&string)));
+            return Ok(ElemRef::Function(Self::to_elementary(&string)?));
         }
 
+        // check for special function (independent variable) x, and then check for constants
         if string == "x" {
-            return Some(ElemRef::Function(X));
+            return Ok(ElemRef::Function(X));
+        } else if let Ok(number) = string.parse::<f64>() {
+            return Ok(ElemRef::Function(Con(number)));
         }
 
         match &string[..] {
             // check in order of operations
-            "^" => Some(ElemRef::Pow),
-            "*" => Some(ElemRef::Mul),
-            "/" => Some(ElemRef::Div),
-            "+" => Some(ElemRef::Add),
-            "-" => Some(ElemRef::Sub),
+            "^" => Ok(ElemRef::Pow),
+            "*" => Ok(ElemRef::Mul),
+            "/" => Ok(ElemRef::Div),
+            "+" => Ok(ElemRef::Add),
+            "-" => Ok(ElemRef::Sub),
             &_ => {
                 // if we do not have an operation, we must have a function consisting of a function
                 // identifier and its contents
@@ -163,33 +206,44 @@ impl Elementary {
                 let cont = cont[1..cont.len() - 1].to_string();
 
                 match func {
-                    "sin" => Some(ElemRef::Function(Sin(Arc::new(Self::to_elementary(&cont))))),
-                    "cos" => Some(ElemRef::Function(Cos(Arc::new(Self::to_elementary(&cont))))),
-                    "tan" => Some(ElemRef::Function(Tan(Arc::new(Self::to_elementary(&cont))))),
-                    "asin" => Some(ElemRef::Function(Asin(Arc::new(Self::to_elementary(
+                    "sin" => Ok(ElemRef::Function(Sin(Arc::new(Self::to_elementary(
                         &cont,
-                    ))))),
-                    "acos" => Some(ElemRef::Function(Acos(Arc::new(Self::to_elementary(
+                    )?)))),
+                    "cos" => Ok(ElemRef::Function(Cos(Arc::new(Self::to_elementary(
                         &cont,
-                    ))))),
-                    "atan" => Some(ElemRef::Function(Atan(Arc::new(Self::to_elementary(
+                    )?)))),
+                    "tan" => Ok(ElemRef::Function(Tan(Arc::new(Self::to_elementary(
                         &cont,
-                    ))))),
-                    "sinh" => Some(ElemRef::Function(Sinh(Arc::new(Self::to_elementary(
+                    )?)))),
+                    "asin" => Ok(ElemRef::Function(Asin(Arc::new(Self::to_elementary(
                         &cont,
-                    ))))),
-                    "cosh" => Some(ElemRef::Function(Cosh(Arc::new(Self::to_elementary(
+                    )?)))),
+                    "acos" => Ok(ElemRef::Function(Acos(Arc::new(Self::to_elementary(
                         &cont,
-                    ))))),
-                    "tanh" => Some(ElemRef::Function(Tanh(Arc::new(Self::to_elementary(
+                    )?)))),
+                    "atan" => Ok(ElemRef::Function(Atan(Arc::new(Self::to_elementary(
                         &cont,
-                    ))))),
-                    "ln" => Some(ElemRef::Function(Log(
+                    )?)))),
+                    "sinh" => Ok(ElemRef::Function(Sinh(Arc::new(Self::to_elementary(
+                        &cont,
+                    )?)))),
+                    "cosh" => Ok(ElemRef::Function(Cosh(Arc::new(Self::to_elementary(
+                        &cont,
+                    )?)))),
+                    "tanh" => Ok(ElemRef::Function(Tanh(Arc::new(Self::to_elementary(
+                        &cont,
+                    )?)))),
+                    "ln" => Ok(ElemRef::Function(Log(
                         Arc::new(Con(E)), //ln is equivalent to log base e of its contents
-                        Arc::new(Self::to_elementary(&cont)),
+                        Arc::new(Self::to_elementary(&cont)?),
                     ))),
-                    "abs" => Some(ElemRef::Function(Abs(Arc::new(Self::to_elementary(&cont))))),
-                    _ => None,
+                    "abs" => Ok(ElemRef::Function(Abs(Arc::new(Self::to_elementary(
+                        &cont,
+                    )?)))),
+                    _ => Err(Error::new(
+                        ErrorKind::InvalidInput,
+                        format!("Function identifier '{func}' not recognized"),
+                    )),
                 }
             }
         }
@@ -248,10 +302,13 @@ enum ElemRef {
     Sub,
 }
 impl ElemRef {
-    fn convert(self) -> Option<Elementary> {
+    fn convert(self) -> Result<Elementary, Error> {
         match self {
-            Self::Function(elem) => Some(elem),
-            _ => None,
+            Self::Function(elem) => Ok(elem),
+            _ => Err(Error::new(
+                ErrorKind::InvalidData,
+                String::from("Cannot convert operation to elementary function"),
+            )),
         }
     }
 }
