@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::Elementary::{self, *};
 
 #[derive(Debug)]
@@ -22,6 +24,8 @@ enum FuncRep {
     Cosh,
     Tanh,
 
+    Abs,
+
     Mul(Elementary),
     Div(Elementary),
     Pow(Elementary), // Pow must include an Elementary instance because the base and exponent must
@@ -29,13 +33,14 @@ enum FuncRep {
     Log(Elementary),
 
     Con,
-    Abs,
 }
 
 impl Elementary {
     pub fn classify(&self) -> Category {
         if self.is_constant() {
             Category::Constant
+        } else if self.is_exponential() {
+            Category::Exponential
         } else {
             Category::ClusterFuck
         }
@@ -71,6 +76,36 @@ impl Elementary {
             Con(_) => true,
             X => false,
         }
+    }
+
+    // Not implemented yet, but the method is required for is_exponential so for now it just
+    // returns true
+    fn is_linear(&self) -> bool {
+        if let Mul(func1, func2) = self {
+            if (func1.is_constant() && (func2.is_linear() || func2.clone() == X.into()))
+                || (func2.is_constant() && (func1.is_linear() || func1.clone() == X.into()))
+            {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn is_exponential(&self) -> bool {
+        if let Pow(base, exp) = self {
+            if base.is_constant() && exp.is_linear() {
+                return true;
+            }
+        }
+        if let Mul(func1, func2) = self {
+            if (func1.is_exponential() && func2.is_constant())
+                || (func1.is_constant() && func2.is_exponential())
+            {
+                return true;
+            }
+        }
+
+        false
     }
 
     fn component_functions(&self) -> Vec<FuncRep> {
