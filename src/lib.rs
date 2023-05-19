@@ -49,3 +49,10 @@ pub use utils::include::*;
 mod simplify;
 
 type Func = Box<dyn Fn(f64) -> f64 + 'static>;
+
+#[derive(Debug)]
+pub enum Error {
+    ParseError(String),
+    SimplifyError(Elementary),
+    InternalError(String),
+}

@@ -19,11 +19,16 @@ pub enum Elementary {
     Cos(Arc<Elementary>), // of the type cos(f(x))
     Tan(Arc<Elementary>), // of the type tan(f(x))
 
+    Sec(Arc<Elementary>), // of the tyoe sec(f(x))
+    Csc(Arc<Elementary>), // of the type csc(f(x))
+    Cot(Arc<Elementary>), // of the type cot(f(x))
+
     // Standard arcus functions
     Asin(Arc<Elementary>), // of the type arcsin(f(x))
     Acos(Arc<Elementary>), // of the type arccos(f(x))
     Atan(Arc<Elementary>), // of the type arctan(f(x))
 
+    // hyperbolic trig functions
     Sinh(Arc<Elementary>), // of the type sinh(f(x))
     Cosh(Arc<Elementary>), // of the type cosh(f(x))
     Tanh(Arc<Elementary>), // of the type tanh(f(x))
@@ -51,6 +56,10 @@ impl Elementary {
             Sin(func) => (*func).clone().call()(x).sin(),
             Cos(func) => (*func).clone().call()(x).cos(),
             Tan(func) => (*func).clone().call()(x).tan(),
+
+            Sec(func) => 1. / (*func).clone().call()(x).cos(),
+            Csc(func) => 1. / (*func).clone().call()(x).sin(),
+            Cot(func) => 1. / (*func).clone().call()(x).tan(),
 
             Asin(func) => (*func).clone().call()(x).asin(),
             Acos(func) => (*func).clone().call()(x).acos(),
@@ -84,6 +93,15 @@ impl Elementary {
 impl Add for Elementary {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
+        if let Con(numb) = self {
+            if numb == 0. {
+                return rhs;
+            }
+        } else if let Con(numb) = rhs {
+            if numb == 0. {
+                return self;
+            }
+        }
         Self::Add(Arc::new(self), Arc::new(rhs))
     }
 }
@@ -96,6 +114,19 @@ impl Sub for Elementary {
 impl Mul for Elementary {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self::Output {
+        if let Con(numb) = self {
+            if numb == 1. {
+                return rhs;
+            } else if numb == 0. {
+                return self;
+            }
+        } else if let Con(numb) = rhs {
+            if numb == 1. {
+                return self;
+            } else if numb == 0. {
+                return rhs;
+            }
+        }
         Self::Mul(Arc::new(self), Arc::new(rhs))
     }
 }
@@ -111,6 +142,63 @@ impl Add<f64> for Elementary {
     type Output = Self;
     fn add(self, rhs: f64) -> Self::Output {
         Self::Add(Arc::new(self), Arc::new(Con(rhs)))
+    }
+}
+impl Sub<f64> for Elementary {
+    type Output = Self;
+    fn sub(self, rhs: f64) -> Self::Output {
+        Self::Sub(Arc::new(self), Arc::new(Con(rhs)))
+    }
+}
+impl Div<f64> for Elementary {
+    type Output = Self;
+    fn div(self, rhs: f64) -> Self::Output {
+        Self::Div(Arc::new(self), Arc::new(Con(rhs)))
+    }
+}
+impl Mul<f64> for Elementary {
+    type Output = Self;
+    fn mul(self, rhs: f64) -> Self::Output {
+        Self::Mul(Arc::new(self), Arc::new(Con(rhs)))
+    }
+}
+
+// operation implementations for Arc<Elementary>
+impl Add<Elementary> for Arc<Elementary> {
+    type Output = Elementary;
+    fn add(self, rhs: Elementary) -> Self::Output {
+        let elem = force_unwrap(&self);
+        elem + rhs
+    }
+}
+impl Sub<Elementary> for Arc<Elementary> {
+    type Output = Elementary;
+    fn sub(self, rhs: Elementary) -> Self::Output {
+        let elem = force_unwrap(&self);
+        elem - rhs
+    }
+}
+impl Mul<Elementary> for Arc<Elementary> {
+    type Output = Elementary;
+    fn mul(self, rhs: Elementary) -> Self::Output {
+        let elem = force_unwrap(&self);
+        elem * rhs
+    }
+}
+impl Div<Elementary> for Arc<Elementary> {
+    type Output = Elementary;
+    fn div(self, rhs: Elementary) -> Self::Output {
+        let elem = force_unwrap(&self);
+        elem / rhs
+    }
+}
+
+// returns the inner Elementary value of the Arc or returns a clone
+pub fn force_unwrap(element: &Arc<Elementary>) -> Elementary {
+    if let Ok(inner) = Arc::try_unwrap(element.clone()) {
+        inner
+    } else {
+        (**element).clone()
     }
 }
 

@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
-use crate::Elementary::{self, *};
+use crate::{
+    Elementary::{self, *},
+    Error,
+};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Category {
     Exponential,
     Polynomial,
@@ -11,38 +14,18 @@ pub enum Category {
     ClusterFuck,
 }
 
-enum FuncRep {
-    Sin,
-    Cos,
-    Tan,
-
-    Asin,
-    Acos,
-    Atan,
-
-    Sinh,
-    Cosh,
-    Tanh,
-
-    Abs,
-
-    Mul(Elementary),
-    Div(Elementary),
-    Pow(Elementary), // Pow must include an Elementary instance because the base and exponent must
-    // both be identifiable.
-    Log(Elementary),
-
-    Con,
-}
-
 impl Elementary {
-    pub fn classify(&self) -> Category {
+    pub fn classify(&self) -> Result<Category, Error> {
         if self.is_constant() {
-            Category::Constant
-        } else if self.is_exponential() {
-            Category::Exponential
+            Ok(Category::Constant)
+        } else if self.is_exponential()? {
+            Ok(Category::Exponential)
+        } else if self.is_polynomial()? {
+            Ok(Category::Polynomial)
+        } else if self.is_trig() {
+            Ok(Category::Trigonometric)
         } else {
-            Category::ClusterFuck
+            Ok(Category::ClusterFuck)
         }
     }
 
@@ -53,6 +36,10 @@ impl Elementary {
             Sin(func) => func.is_constant(),
             Cos(func) => func.is_constant(),
             Tan(func) => func.is_constant(),
+
+            Sec(func) => func.is_constant(),
+            Csc(func) => func.is_constant(),
+            Cot(func) => func.is_constant(),
 
             Asin(func) => func.is_constant(),
             Acos(func) => func.is_constant(),
@@ -78,8 +65,7 @@ impl Elementary {
         }
     }
 
-    // Not implemented yet, but the method is required for is_exponential so for now it just
-    // returns true
+    // returns true if the function is of type f(x) = Cx
     fn is_linear(&self) -> bool {
         if let Mul(func1, func2) = self {
             if (func1.is_constant() && (func2.is_linear() || func2.clone() == X.into()))
@@ -91,98 +77,101 @@ impl Elementary {
         false
     }
 
-    fn is_exponential(&self) -> bool {
+    // returns true if the function is a constant digit f(x) = C, C ∈ ℤ
+    fn is_digit(&self) -> Result<bool, Error> {
+        if let Con(numb) = self {
+            if numb.fract() == 0.0 {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    // returns true if the function is of type f(x) = a^(cx)
+    fn is_exponential(&self) -> Result<bool, Error> {
         if let Pow(base, exp) = self {
             if base.is_constant() && exp.is_linear() {
-                return true;
+                return Ok(true);
             }
         }
         if let Mul(func1, func2) = self {
-            if (func1.is_exponential() && func2.is_constant())
-                || (func1.is_constant() && func2.is_exponential())
+            if (func1.is_exponential()? && func2.is_constant())
+                || (func1.is_constant() && func2.is_exponential()?)
             {
-                return true;
+                return Ok(true);
             }
         }
 
-        false
+        Ok(false)
     }
 
-    fn component_functions(&self) -> Vec<FuncRep> {
-        let mut components: Vec<FuncRep> = Vec::new();
+    // returns true if the function is of type f(x) = ax^n + bx^(n-1) + cx^(n-2) + ...
+    // (a, b, c, ... ∈ ℝ)
+    fn is_polynomial(&self) -> Result<bool, Error> {
+        if let Pow(base, exp) = self {
+            if base.clone() == X.into() && exp.is_digit()? {
+                return Ok(true);
+            }
+        } else if self.clone() == X.into() {
+            return Ok(true);
+        } else if let Con(_) = self {
+            return Ok(true);
+        } else if let Mul(func1, func2) = self {
+            if (func1.is_constant() && func2.is_polynomial()?)
+                || (func2.is_polynomial()? && func1.is_constant())
+            {
+                return Ok(true);
+            }
+        } else if let Add(func1, func2) = self {
+            if func1.is_polynomial()? && func2.is_polynomial()? {
+                return Ok(true);
+            }
+        } else if let Sub(func1, func2) = self {
+            if func1.is_polynomial()? && func2.is_polynomial()? {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
 
+    // returns true if the function is of type trig * trig, constant * trig, trig^constant, or
+    // log constant (trig)
+    fn is_trig(&self) -> bool {
         match self {
-            Sin(_) => {
-                components.push(FuncRep::Sin);
-            }
-            Cos(_) => {
-                components.push(FuncRep::Cos);
-            }
-            Tan(_) => {
-                components.push(FuncRep::Tan);
-            }
+            Sin(_) => true,
+            Cos(_) => true,
+            Tan(_) => true,
 
-            Asin(_) => {
-                components.push(FuncRep::Asin);
-            }
-            Acos(_) => {
-                components.push(FuncRep::Acos);
-            }
-            Atan(_) => {
-                components.push(FuncRep::Atan);
-            }
+            Sec(_) => true,
+            Csc(_) => true,
+            Cot(_) => true,
 
-            Sinh(_) => {
-                components.push(FuncRep::Sinh);
-            }
-            Cosh(_) => {
-                components.push(FuncRep::Cosh);
-            }
-            Tanh(_) => {
-                components.push(FuncRep::Tanh);
-            }
+            Asin(_) => true,
+            Acos(_) => true,
+            Atan(_) => true,
 
-            Add(func1, func2) => {
-                for c in func1.component_functions() {
-                    components.push(c);
-                }
-                for c in func2.component_functions() {
-                    components.push(c);
-                }
-            }
-            Sub(func1, func2) => {
-                for c in func1.component_functions() {
-                    components.push(c);
-                }
-                for c in func2.component_functions() {
-                    components.push(c);
-                }
-            }
+            Sinh(_) => true,
+            Cosh(_) => true,
+            Tanh(_) => true,
+
+            Add(func1, func2) => func1.is_trig() && func2.is_trig(),
+            Sub(func1, func2) => func1.is_trig() && func2.is_trig(),
             Mul(func1, func2) => {
-                components.push(FuncRep::Mul(Mul(func1.clone(), func2.clone())));
+                (func1.is_trig() && func2.is_trig()) // trig * trig
+                    || (func1.is_trig() && func2.is_constant()) // trig * constant
+                    || (func2.is_trig() && func1.is_constant()) // constant * trig
             }
             Div(func1, func2) => {
-                components.push(FuncRep::Div(Div(func1.clone(), func2.clone())));
+                (func1.is_trig() && func2.is_trig())
+                    || (func1.is_trig() && func2.is_constant())
+                    || (func2.is_trig() && func1.is_constant())
             }
-            Pow(func1, func2) => {
-                components.push(FuncRep::Pow(Pow(func1.clone(), func2.clone())));
-            }
+            Pow(func1, func2) => func1.is_trig() && func2.is_constant(), // trig^constant
+            Log(func1, func2) => func1.is_constant() && func2.is_trig(), // log constant (trig)
 
-            Abs(_) => {
-                components.push(FuncRep::Abs);
-            }
-
-            Con(_) => {
-                components.push(FuncRep::Con);
-            }
-
-            Log(func1, func2) => {
-                components.push(FuncRep::Log(Log(func1.to_owned(), func2.to_owned())));
-            }
-
-            X => (),
+            Abs(_) => false,
+            Con(_) => false,
+            X => false,
         }
-
-        components
     }
 }

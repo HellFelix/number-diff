@@ -1,11 +1,12 @@
-use std::io::{Error, ErrorKind};
+use crate::Error;
 use std::{f64::consts::E, sync::Arc};
 
 use crate::Elementary::{self, *};
 
 impl<'a> From<&'a str> for Elementary {
     fn from(value: &'a str) -> Self {
-        Self::to_elementary(value).unwrap()
+        let value: String = value.split_whitespace().collect();
+        Self::to_elementary(&value).unwrap()
     }
 }
 impl Elementary {
@@ -114,10 +115,9 @@ impl Elementary {
         // order of operations
         while functions.len() != 1 {
             if iteration >= 10000 {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    String::from("Iteration limit reached while parsing function"),
-                ));
+                return Err(Error::ParseError(String::from(
+                    "Iteration limit reached while parsing function",
+                )));
             } else {
                 iteration += 1;
             }
@@ -242,6 +242,15 @@ impl Elementary {
                     "tan" => Ok(ElemRef::Function(Tan(Arc::new(Self::to_elementary(
                         &cont,
                     )?)))),
+                    "sec" => Ok(ElemRef::Function(Sec(Arc::new(Self::to_elementary(
+                        &cont,
+                    )?)))),
+                    "csc" => Ok(ElemRef::Function(Csc(Arc::new(Self::to_elementary(
+                        &cont,
+                    )?)))),
+                    "cot" => Ok(ElemRef::Function(Cot(Arc::new(Self::to_elementary(
+                        &cont,
+                    )?)))),
                     "asin" => Ok(ElemRef::Function(Asin(Arc::new(Self::to_elementary(
                         &cont,
                     )?)))),
@@ -267,10 +276,13 @@ impl Elementary {
                     "abs" => Ok(ElemRef::Function(Abs(Arc::new(Self::to_elementary(
                         &cont,
                     )?)))),
-                    _ => Err(Error::new(
-                        ErrorKind::InvalidInput,
-                        format!("Function identifier '{func}' not recognized"),
-                    )),
+                    "sqrt" => Ok(ElemRef::Function(Pow(
+                        Arc::new(Self::to_elementary(&cont)?),
+                        Arc::new(Con(0.5)),
+                    ))),
+                    _ => Err(Error::ParseError(format!(
+                        "Function identifier '{func}' not recognized"
+                    ))),
                 }
             }
         }
@@ -300,19 +312,30 @@ fn iterate_operation(functions: &mut Vec<ElemRef>, operation: ElemRef) -> Result
                         Arc::new(functions[i - 1].clone().convert()?),
                         Arc::new(functions[i + 1].clone().convert()?),
                     )),
-                    ElemRef::Sub => ElemRef::Function(Sub(
-                        Arc::new(functions[i - 1].clone().convert()?),
-                        Arc::new(functions[i + 1].clone().convert()?),
-                    )),
+                    ElemRef::Sub => {
+                        if i > 0 {
+                            ElemRef::Function(Sub(
+                                Arc::new(functions[i - 1].clone().convert()?),
+                                Arc::new(functions[i + 1].clone().convert()?),
+                            ))
+                        } else {
+                            ElemRef::Function(functions[i + 1].clone().convert()? * (-1 as f64))
+                        }
+                    }
                     _ => unimplemented!("No such operation"), // this point shouldn't be reached
                 };
 
                 // the operation itself as well as the functions surrounding it must be removed
                 functions.remove(i + 1);
                 functions.remove(i);
-                functions.remove(i - 1);
-                // the combined new function is inserted in the place of the previous functions
-                functions.insert(i - 1, replacement_func);
+                if i > 0 {
+                    functions.remove(i - 1);
+                    // the combined new function is inserted in the place of the previous functions
+                    functions.insert(i - 1, replacement_func);
+                } else {
+                    // this is strictly for when a negative number is implied as seen above
+                    functions.insert(i, replacement_func)
+                }
             }
         }
     }
@@ -333,10 +356,9 @@ impl ElemRef {
     fn convert(self) -> Result<Elementary, Error> {
         match self {
             Self::Function(elem) => Ok(elem),
-            _ => Err(Error::new(
-                ErrorKind::InvalidData,
-                String::from("Cannot convert operation to elementary function"),
-            )),
+            _ => Err(Error::ParseError(String::from(
+                "Cannot convert operation to elementary function",
+            ))),
         }
     }
 }

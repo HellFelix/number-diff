@@ -1,6 +1,5 @@
 use number_diff::Function;
 fn main() {
-    let func = Function::from("4^(6x*sin(x))");
-    println!("{:?}", func.func);
-    println!("{:?}", func.func.classify());
+    let mut func1 = Function::from("4+ 0 + x + 3");
+    println!("{:?}", func1.func.simplify())
 }

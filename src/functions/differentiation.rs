@@ -22,6 +22,19 @@ impl Elementary {
                 Arc::new((*func).clone().differentiate()),
             ), // 1/cos^2(f(x)) * f'(x)
 
+            Sec(func) => (*func).clone().differentiate() * Tan(func.clone()) * Sec(func.to_owned()),
+            Csc(func) => {
+                (*func).clone().differentiate()
+                    * Cot(func.clone())
+                    * Csc(func.to_owned())
+                    * (-1 as f64)
+            }
+            Cot(func) => {
+                (*func).clone().differentiate()
+                    * (-1 as f64)
+                    * Pow(Arc::new(Csc(func.to_owned())), Arc::new(Con(2.)))
+            }
+
             Asin(func) => Div(
                 Arc::new((*func).clone().differentiate()),
                 Arc::new(Pow(
