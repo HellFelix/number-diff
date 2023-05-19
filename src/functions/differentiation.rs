@@ -162,15 +162,8 @@ impl Elementary {
     }
 }
 
-impl Function {
-    pub fn differentiate(&mut self) {
-        self.func = self.func.to_owned().differentiate();
-    }
-}
-
+/// retuns the derivative of the passed Function.
 pub fn derivative_of(input_func: &Function) -> Function {
-    let elem_derivative = input_func.func.clone().differentiate();
-    Function {
-        func: elem_derivative,
-    }
+    let elem_derivative = input_func.elementary().clone().differentiate();
+    Function::from(elem_derivative)
 }

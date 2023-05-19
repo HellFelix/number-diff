@@ -1,5 +1,8 @@
 use crate::Error;
-use std::{f64::consts::E, sync::Arc};
+use std::{
+    f64::consts::{E, PI},
+    sync::Arc,
+};
 
 use crate::Elementary::{self, *};
 
@@ -67,6 +70,12 @@ impl Elementary {
                 } else if interp_slice[i] == "x" {
                     chunks.push(&value[cut_index..=i]);
                     cut_index = i + 1;
+                } else if interp_slice[i] == "e" {
+                    chunks.push(&value[cut_index..=i]);
+                    cut_index = i + 1;
+                } else if interp_slice[i] == "pi" || interp_slice[i] == "π" {
+                    chunks.push("pi");
+                    cut_index = i + 1;
                 } else {
                     // checking for constants
                     if let Ok(_) = &value[cut_index..=i].parse::<f64>() {
@@ -98,6 +107,7 @@ impl Elementary {
             chunks.push(value);
         }
 
+        println!("{chunks:?}");
         chunks
     }
 
@@ -224,13 +234,20 @@ impl Elementary {
             "/" => Ok(ElemRef::Div),
             "+" => Ok(ElemRef::Add),
             "-" => Ok(ElemRef::Sub),
-            &_ => {
+            // also constants
+            "e" => Ok(ElemRef::Function(Con(E))),
+            "pi" => Ok(ElemRef::Function(Con(PI))),
+            _ => {
                 // if we do not have an operation, we must have a function consisting of a function
                 // identifier and its contents
                 let (func, cont) = split_first(&string, "(");
 
-                // remove parenthesis
-                let cont = cont[1..cont.len() - 1].to_string();
+                // remove outer parenthesis
+                let mut graphemes: Vec<&str> = cont.split("").collect();
+                // remove the first and last character because they should be parentheses
+                graphemes.remove(0);
+                graphemes.pop();
+                let cont: String = graphemes.iter().map(|x| *x).collect();
 
                 match func {
                     "sin" => Ok(ElemRef::Function(Sin(Arc::new(Self::to_elementary(

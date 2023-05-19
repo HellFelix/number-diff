@@ -1,5 +1,5 @@
 pub use crate::functions::calc::{
-    abs, acos, asin, atan, cos, cosh, sin, sinh, tan, tanh, Elementary::X,
+    abs, acos, asin, atan, cos, cosh, cot, csc, nth_root, sec, sin, sinh, sqrt, tan, tanh,
 };
 
 pub use crate::functions::differentiation::derivative_of;

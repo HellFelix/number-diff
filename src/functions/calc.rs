@@ -203,49 +203,255 @@ pub fn force_unwrap(element: &Arc<Elementary>) -> Elementary {
 }
 
 // basic trig functions
-pub fn sin(func: Elementary) -> Elementary {
-    Sin(Arc::new(func))
+/// Creates a Function equal to the sine of the passed Function
+///
+/// i.e f(x) ⟹ sin(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = Function::default();
+///     let sin_of_x = sin(x);
+///     assert_eq!(sin_of_x.call(PI / 2.), 1.);
+/// ```
+pub fn sin(func: Function) -> Function {
+    let new_function = Sin(Arc::new(func.elementary()));
+    Function::from(new_function)
 }
-pub fn cos(func: Elementary) -> Elementary {
-    Cos(Arc::new(func))
+
+/// Creates a Function equal to the cosine of the passed Function
+///
+/// i.e f(x) ⟹ cos(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = Function::default();
+///     let cos_of_x = cos(x);
+///     assert_eq!(cos_of_x.call(0.), 1.);
+/// ```
+pub fn cos(func: Function) -> Function {
+    let new_function = Cos(Arc::new(func.elementary()));
+    Function::from(new_function)
 }
-pub fn tan(func: Elementary) -> Elementary {
-    Tan(Arc::new(func))
+
+/// Creates a Function equal to the tangent of the passed Function
+///
+/// i.e f(x) ⟹ tan(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = Function::default();
+///     let tan_of_x = tan(x);
+///     assert_eq!(tan_of_x.call(PI / 4.), 1.);
+/// ```
+pub fn tan(func: Function) -> Function {
+    let new_function = Tan(Arc::new(func.elementary()));
+    Function::from(new_function)
+}
+
+/// Creates a Function equal to the secant of the passed Function
+///
+/// i.e f(x) ⟹ sec(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = Function::default();
+///     let sec_of_x = sec(x);
+///     assert_eq!(sec_of_x.call(PI), -1.);
+/// ```
+pub fn sec(func: Function) -> Function {
+    let new_function = Sec(Arc::new(func.elementary()));
+    Function::from(new_function)
+}
+
+/// Creates a Function equal to the cosecant of the passed Function
+///
+/// i.e f(x) ⟹ csc(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = Function::default();
+///     let csc_of_x = csc(x);
+///     assert_eq!(csc_of_x.call(3./2. * PI), -1.);
+/// ```
+pub fn csc(func: Function) -> Function {
+    let new_function = Csc(Arc::new(func.elementary()));
+    Function::from(new_function)
+}
+
+/// Creates a Function equal to the cotangent of the passed Function
+///
+/// i.e f(x) ⟹ cot(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = Function::default();
+///     let cot_of_x = cot(x);
+///     assert_eq!(cot_of_x.call(PI/2.), 0.);
+/// ```
+pub fn cot(func: Function) -> Function {
+    let new_function = Cot(Arc::new(func.elementary()));
+    Function::from(new_function)
 }
 
 // basic arcus functions
-pub fn asin(func: Elementary) -> Elementary {
-    Asin(Arc::new(func))
+/// Creates a Function equal to the arcsine of the passed Function
+///
+/// i.e f(x) ⟹ asin(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = function::default();
+///     let asin_of_x = asin(x);
+///     assert_eq!(asin_of_x.call(1.), PI/2.);
+/// ```
+pub fn asin(func: Function) -> Function {
+    let new_function = Asin(Arc::new(func.elementary()));
+    Function::from(new_function)
 }
-pub fn acos(func: Elementary) -> Elementary {
-    Acos(Arc::new(func))
+
+/// Creates a Function equal to the arccosine of the passed Function
+///
+/// i.e f(x) ⟹ acos(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = function::default();
+///     let acos_of_x = acos(x);
+///     assert_eq!(acos_of_x.call(1.), 0.);
+/// ```
+pub fn acos(func: Function) -> Function {
+    let new_function = Acos(Arc::new(func.elementary()));
+    Function::from(new_function)
 }
-pub fn atan(func: Elementary) -> Elementary {
-    Atan(Arc::new(func))
+
+/// Creates a Function equal to the arctangent of the passed Function
+///
+/// i.e f(x) ⟹ atan(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = function::default();
+///     let atan_of_x = atan(x);
+///     assert_eq!(atan_of_x.call(1.), PI/4.);
+/// ```
+pub fn atan(func: Function) -> Function {
+    let new_function = Atan(Arc::new(func.elementary()));
+    Function::from(new_function)
 }
 
 // hyperbolic functions
-pub fn sinh(func: Elementary) -> Elementary {
-    Sinh(Arc::new(func))
+
+/// Creates a Function equal to the hyperbolic sine of the passed Function
+///
+/// i.e f(x) ⟹ sinh(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = function::default();
+///     let sinh_of_x = sinh(x);
+///     assert_eq!(sinh_of_x.call(0.), 0.);
+/// ```
+pub fn sinh(func: Function) -> Function {
+    let new_function = Sinh(Arc::new(func.elementary()));
+    Function::from(new_function)
 }
-pub fn cosh(func: Elementary) -> Elementary {
-    Cosh(Arc::new(func))
+
+/// Creates a Function equal to the hyperbolic cosine of the passed Function
+///
+/// i.e f(x) ⟹ cosh(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = function::default();
+///     let cosh_of_x= cosh(x);
+///     assert_eq!(cosh_of_x.call(0.), 1.);
+/// ```
+pub fn cosh(func: Function) -> Function {
+    let new_function = Cosh(Arc::new(func.elementary()));
+    Function::from(new_function)
 }
-pub fn tanh(func: Elementary) -> Elementary {
-    Tanh(Arc::new(func))
+
+/// Creates a Function equal to the hyperbolic tangent of the passed Function
+///
+/// i.e f(x) ⟹ tanh(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = function::default();
+///     let tanh_of_x= tanh(x);
+///     assert_eq!(tanh_of_x.call(0.), 0.);
+/// ```
+pub fn tanh(func: Function) -> Function {
+    let new_function = Tanh(Arc::new(func.elementary()));
+    Function::from(new_function)
 }
 // abs function
-pub fn abs(func: Elementary) -> Elementary {
-    Abs(Arc::new(func))
+/// Creates a Function equal to the absolute value of the passed Function
+///
+/// i.e f(x) ⟹ |f(x)|
+///
+/// Example:
+/// ```rust
+///     let x = function::default();
+///     let abs_of_x= abs(x);
+///     assert_eq!(abs_of_x.call(-1.), 1.);
+/// ```
+pub fn abs(func: Function) -> Function {
+    let new_function = Abs(Arc::new(func.elementary()));
+    Function::from(new_function)
+}
+
+/// Creates a Function equal to the square root of the passed Function
+///
+/// i.e f(x) ⟹ √f(x)
+///
+/// Example:
+/// ```rust
+///     let x = function::default();
+///     let sqrt_of_x= sqrt(x);
+///     assert_eq!(sqrt_of_x.call(4.), 2.);
+/// ```
+pub fn sqrt(func: Function) -> Function {
+    let new_function = Pow(Arc::new(func.elementary()), Arc::new(Con(0.5)));
+    Function::from(new_function)
+}
+
+/// Creates a Function equal to the nth root of the passed Function
+///
+/// i.e f(x) ⟹ √f(x)
+///
+/// Example:
+/// ```rust
+///     let x = function::default();
+///     let nth_root_of_x= nth_root(x, 3);
+///     assert_eq!(nth_root_of_x.call(8.), 2.);
+/// ```
+pub fn nth_root(func: Function, n: f64) -> Function {
+    let new_function = Pow(Arc::new(func.elementary()), Arc::new(Con(1.) / n));
+    Function::from(new_function)
 }
 
 pub struct Function {
-    pub func: Elementary,
+    func: Elementary,
 }
 
 impl Function {
-    pub fn new(func: Elementary) -> Self {
-        Self { func }
+    pub fn elementary(&self) -> Elementary {
+        self.func.clone()
+    }
+
+    /// Turns self into the derivative of self
+    ///
+    /// f(x) ⟹ f'(x)
+    pub fn differentiate(&mut self) {
+        self.func = self.elementary().to_owned().differentiate();
+    }
+}
+impl Default for Function {
+    /// The default() method returns the unit function f(x) = x, returning the independant variable
+    /// for each input value.
+    fn default() -> Self {
+        Self { func: X }
     }
 }
 impl<'a> From<&'a str> for Function {
@@ -264,5 +470,10 @@ impl<'a> From<&'a String> for Function {
     fn from(value: &'a String) -> Self {
         let func = Elementary::from(&value[..]);
         Self { func }
+    }
+}
+impl From<Elementary> for Function {
+    fn from(value: Elementary) -> Self {
+        Self { func: value }
     }
 }
