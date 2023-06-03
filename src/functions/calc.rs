@@ -1,11 +1,13 @@
 use crate::Elementary::*;
 use std::{
     f64::consts::E,
-    ops::{Add, Div, Mul, Sub},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub},
     sync::Arc,
 };
 
-use crate::Func;
+use crate::{Error, Func};
+
+use super::series_expansions::SeriesExpansion;
 
 // unit function f(x) -> x
 fn f() -> Func {
@@ -105,6 +107,17 @@ impl Add for Elementary {
         Self::Add(Arc::new(self), Arc::new(rhs))
     }
 }
+impl Add<&mut Self> for Elementary {
+    type Output = Self;
+    fn add(self, rhs: &mut Self) -> Self::Output {
+        self + rhs.clone()
+    }
+}
+impl AddAssign for Elementary {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = rhs + self.clone();
+    }
+}
 impl Sub for Elementary {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
@@ -130,10 +143,32 @@ impl Mul for Elementary {
         Self::Mul(Arc::new(self), Arc::new(rhs))
     }
 }
+impl Mul<&mut Self> for Elementary {
+    type Output = Self;
+    fn mul(self, rhs: &mut Self) -> Self::Output {
+        self * rhs.clone()
+    }
+}
+impl MulAssign for Elementary {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = rhs * self.clone();
+    }
+}
 impl Div for Elementary {
     type Output = Self;
     fn div(self, rhs: Self) -> Self::Output {
         Self::Div(Arc::new(self), Arc::new(rhs))
+    }
+}
+impl Div<&mut Self> for Elementary {
+    type Output = Self;
+    fn div(self, rhs: &mut Self) -> Self::Output {
+        self / rhs.clone()
+    }
+}
+impl DivAssign for Elementary {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = rhs / self.clone();
     }
 }
 
@@ -442,9 +477,23 @@ impl Function {
 
     /// Turns self into the derivative of self
     ///
-    /// f(x) ⟹ f'(x)
+    /// i.e. f(x) ⟹ f'(x)
     pub fn differentiate(&mut self) {
         self.func = self.elementary().to_owned().differentiate();
+    }
+
+    /// Turns the given Function instance into a Taylor series expansion centered around the value
+    /// of a.
+    ///
+    /// If the conversion fails, an [Error::ExpansionError](Error) is returned.
+    pub fn as_taylor_expansion(&mut self, order: u8, a: f64) -> Result<(), Error> {
+        self.func = self.func.expand_taylor(order, a)?.get_elementary();
+        Ok(())
+    }
+
+    ///
+    pub fn get_taylor_expansion(&self, order: u8, a: f64) -> Result<SeriesExpansion, Error> {
+        self.func.expand_taylor(order, a)
     }
 }
 impl Default for Function {
@@ -454,6 +503,17 @@ impl Default for Function {
         Self { func: X }
     }
 }
+
+/// A Function instance can be parsed from any string type using the from method.
+///
+/// Example:
+/// ```rust
+/// let func = Function::from("sin(ln(x))");
+///
+/// assert_eq!(func.call(1.), 0.);
+/// // ...or using the nightly feature
+/// // assert_eq!(func(1.), 0.);
+/// ```
 impl<'a> From<&'a str> for Function {
     fn from(value: &'a str) -> Self {
         let func = Elementary::from(value);
@@ -475,5 +535,36 @@ impl<'a> From<&'a String> for Function {
 impl From<Elementary> for Function {
     fn from(value: Elementary) -> Self {
         Self { func: value }
+    }
+}
+/// A Function instance can be obtained from a SeriesExpansion instance using the from method.
+///
+/// Example:
+/// ```rust
+/// // create the Function instance
+/// let func = Function::from("sin(x)");
+///
+/// // Get the SeriesExpansion
+/// // In this instance we're creating a Taylor expansion of order 5 centered around 0
+/// let expansion = func.get_taylor_expansion(5, 0.);
+///
+/// // Convert the SeriesExpansion into a Function using the from method
+/// let func_expansion = Function::from(expansion);
+/// // Note that this could also be done using the get_function method:
+/// // let func_expansion = expansion.get_function()
+/// //
+/// // ... or using the as_taylor_expansion method to convert the original Function instance into a
+/// // Taylor expansion without creating the SeriesExpansion instance seperatly:
+/// // func.as_taylor_expansion()
+///
+/// ```
+impl From<SeriesExpansion> for Function {
+    fn from(value: SeriesExpansion) -> Self {
+        value.get_function()
+    }
+}
+impl From<&SeriesExpansion> for Function {
+    fn from(value: &SeriesExpansion) -> Self {
+        value.get_function()
     }
 }

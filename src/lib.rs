@@ -11,7 +11,7 @@
 //!
 //! #### Usage
 //! Functions are represented by the Function struct. The Function struct can be created by either
-//! parsing a string or building an Elementary enum and passing it to the Function. A Function
+//! parsing a string or combining functions using standard operations. A Function
 //! instance can then be used with the call(x) method.
 //!
 //! ```rust
@@ -19,9 +19,8 @@
 //! let func1 = Function::from("4sin(x)");
 //! assert_eq!(func1.call(PI/2.), 4.);
 //!
-//! // creating the function by passing an Elementary enum, in this case cos(x)*|sin(x)|
+//! // creating the function by combining other functions, in this case cos(x)*|sin(x)|
 //! let func_enum = cos(X)*abs(sin(X));
-//! let func2 = Function::new(func_enum);
 //! assert_eq!(func2.call(-PI/4.), 0.5);
 //! ```
 //!
@@ -41,7 +40,7 @@
 #![cfg_attr(feature = "nightly", feature(tuple_trait))]
 
 mod functions;
-use functions::calc::Elementary;
+pub use functions::calc::Elementary;
 
 mod utils;
 pub use utils::include::*;
@@ -53,6 +52,7 @@ type Func = Box<dyn Fn(f64) -> f64 + 'static>;
 #[derive(Debug)]
 pub enum Error {
     ParseError(String),
-    SimplifyError(Elementary),
+    SimplifyError(Elementary, String),
     InternalError(String),
+    ExpansionError(String),
 }

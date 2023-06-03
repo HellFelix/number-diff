@@ -31,7 +31,7 @@ impl Elementary {
 
     // checks if the provided function is constant, that is, it contains no independent variable
     // of the type f(x) = C
-    fn is_constant(&self) -> bool {
+    pub fn is_constant(&self) -> bool {
         match self {
             Sin(func) => func.is_constant(),
             Cos(func) => func.is_constant(),
@@ -78,7 +78,7 @@ impl Elementary {
     }
 
     // returns true if the function is a constant digit f(x) = C, C ∈ ℤ
-    fn is_digit(&self) -> Result<bool, Error> {
+    pub fn is_digit(&self) -> Result<bool, Error> {
         if let Con(numb) = self {
             if numb.fract() == 0.0 {
                 return Ok(true);
@@ -88,7 +88,7 @@ impl Elementary {
     }
 
     // returns true if the function is of type f(x) = a^(cx)
-    fn is_exponential(&self) -> Result<bool, Error> {
+    pub fn is_exponential(&self) -> Result<bool, Error> {
         if let Pow(base, exp) = self {
             if base.is_constant() && exp.is_linear() {
                 return Ok(true);
@@ -109,7 +109,7 @@ impl Elementary {
     // (a, b, c, ... ∈ ℝ)
     fn is_polynomial(&self) -> Result<bool, Error> {
         if let Pow(base, exp) = self {
-            if base.clone() == X.into() && exp.is_digit()? {
+            if base.clone().is_polynomial()? && exp.is_digit()? {
                 return Ok(true);
             }
         } else if self.clone() == X.into() {
@@ -117,9 +117,7 @@ impl Elementary {
         } else if let Con(_) = self {
             return Ok(true);
         } else if let Mul(func1, func2) = self {
-            if (func1.is_constant() && func2.is_polynomial()?)
-                || (func2.is_polynomial()? && func1.is_constant())
-            {
+            if func1.is_polynomial()? && func2.is_polynomial()? {
                 return Ok(true);
             }
         } else if let Add(func1, func2) = self {
@@ -127,6 +125,10 @@ impl Elementary {
                 return Ok(true);
             }
         } else if let Sub(func1, func2) = self {
+            if func1.is_polynomial()? && func2.is_polynomial()? {
+                return Ok(true);
+            }
+        } else if let Div(func1, func2) = self {
             if func1.is_polynomial()? && func2.is_polynomial()? {
                 return Ok(true);
             }

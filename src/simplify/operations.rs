@@ -1,4 +1,4 @@
-use std::{ops::Div, sync::Arc};
+use std::sync::Arc;
 
 use crate::{
     Elementary::{self, *},
@@ -12,7 +12,7 @@ impl Elementary {
     pub fn simplify(&self) -> Result<Self, Error> {
         let new_function: Self = match self.classify()? {
             Category::Constant => self.simplify_constant()?,
-            Category::Polynomial => polynomial::simplify_polynomial(self)?,
+            Category::Polynomial => polynomial::simplify_polynomial(self.clone())?,
             Category::ClusterFuck => self.simplify_operations()?,
             _ => self.clone(),
         };
@@ -98,7 +98,10 @@ impl Elementary {
                 Ok(new_numerator / new_denomenator)
             }
         } else {
-            Err(Error::SimplifyError(self.to_owned()))
+            Err(Error::SimplifyError(
+                self.to_owned(),
+                String::from("Attempted to divide a non-divisible expression while simplifying"),
+            ))
         }
     }
 
@@ -144,12 +147,15 @@ impl Elementary {
         Ok(res)
     }
 
-    fn simplify_constant(&self) -> Result<Self, Error> {
+    pub fn simplify_constant(&self) -> Result<Self, Error> {
         if self.classify()? == Category::Constant {
             let value = self.clone().call()(0.);
             Ok(Con(value))
         } else {
-            Err(Error::SimplifyError(self.to_owned()))
+            Err(Error::SimplifyError(
+                self.to_owned(),
+                String::from("Attempted to constant-simplify a non-constant expression"),
+            ))
         }
     }
 }

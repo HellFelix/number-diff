@@ -6,4 +6,4 @@ pub use crate::functions::differentiation::derivative_of;
 
 pub use crate::functions::integration::integrate;
 
-pub use crate::functions::calc::Function;
+pub use crate::functions::{calc::Function, utils::useful_functions::*};
