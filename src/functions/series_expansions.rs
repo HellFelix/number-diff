@@ -51,7 +51,7 @@ impl Elementary {
             current_derivative = current_derivative.differentiate();
             let ith_term = Pow(Arc::new(X - a), Arc::new(Con(i as f64)))
                 * current_derivative.clone().call()(a)
-                / (factorial(i) as f64);
+                / (factorial(i as usize) as f64);
 
             terms.push(ith_term);
         }

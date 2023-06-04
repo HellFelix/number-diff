@@ -27,8 +27,10 @@ impl Elementary {
         let callable_new = new_function.clone().call();
         for i in -1000..1000 {
             if callable_self(i as f64) != callable_new(i as f64) {
+                println!("{self:?}");
+                println!("{new_function:?}");
                 return Err(Error::InternalError(String::from(
-                    format!("while attempting to simplify {self:?}, the simplification method yielded inconsistent results. Found that self({i}) != new_function({i})"))));
+                    format!("while attempting to simplify {self:?}, the simplification method yielded inconsistent results. Found that self({i}) != new_function({i}). Left hand side found to be {}. Right hand side found to be {}", callable_self(i as f64), callable_new(i as f64)))));
             }
         }
         Ok(new_function.to_owned())
@@ -42,15 +44,34 @@ impl Elementary {
             Div(func1, func2) => Ok((func1.simplify()? / func2.simplify()?).divide()?),
             Add(func1, func2) => Ok(func1.simplify()? + func2.simplify()?),
             Sub(func1, func2) => Ok(func1.simplify()? - func2.simplify()?),
-            Pow(func1, func2) => Ok(Pow(
-                Arc::new(func1.simplify()?),
-                Arc::new(func2.simplify()?),
-            )),
+            Pow(func1, func2) => Self::simplify_power(func1, func2),
             Log(func1, func2) => Ok(Log(
                 Arc::new(func1.simplify()?),
                 Arc::new(func2.simplify()?),
             )),
             _ => Ok(self.to_owned()),
+        }
+    }
+
+    fn simplify_power(base: &Self, exp: &Self) -> Result<Self, Error> {
+        match exp.clone() {
+            Con(numb) => {
+                if numb == 0. {
+                    Ok(Con(1.))
+                } else if numb == 1. {
+                    Ok(base.clone())
+                } else {
+                    Ok(Pow(base.simplify()?.into(), exp.simplify()?.into()))
+                }
+            }
+            _ => match base {
+                X => Ok(Pow(base.clone().into(), exp.clone().into())),
+                Pow(inner_base, inner_exp) => Ok(Pow(
+                    inner_base.clone(),
+                    (exp.clone() * (**inner_exp).clone()).into(),
+                )),
+                _ => Ok(Pow(base.simplify()?.into(), exp.simplify()?.into())),
+            },
         }
     }
 

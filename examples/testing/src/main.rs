@@ -36,9 +36,7 @@ fn main() {
         .into(),
     );
 
-    let test_element = Mul(
-        Pow(Sub(X.into(), Con(0.0).into()).into(), Con(3.0).into()).into(),
-        Con(-1.0).into(),
-    );
+    let test_element = Pow((X + 1.).into(), Con(2.).into());
+
     println!("{:?}", test_element.simplify().unwrap());
 }

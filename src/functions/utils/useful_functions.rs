@@ -1,13 +1,13 @@
 use crate::Func;
 
 /// returns n! for numbers n ∈ ℕ
-pub fn factorial(numb: u8) -> u128 {
+pub fn factorial(numb: usize) -> usize {
     if numb == 0 {
         1
     } else {
-        let mut res: u128 = 1;
+        let mut res: usize = 1;
         for i in 1..=numb {
-            res *= i as u128;
+            res *= i;
         }
 
         res
