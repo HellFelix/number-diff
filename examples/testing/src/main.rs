@@ -1,42 +1,16 @@
 use std::f64::consts::PI;
 
-use number_diff::{sin, Elementary::*, Function};
+use number_diff::{derivative_of, sin, Elementary::*, Function};
 
 fn main() {
-    let element = Add(
-        Div(
-            Mul(
-                Pow(Sub(X.into(), Con(0.0).into()).into(), Con(3.0).into()).into(),
-                Con(-1.0).into(),
-            )
-            .into(),
-            Con(6.0).into(),
-        )
-        .into(),
-        Add(
-            Div(
-                Mul(
-                    Pow(Sub(X.into(), Con(0.0).into()).into(), Con(2.0).into()).into(),
-                    Con(0.0).into(),
-                )
-                .into(),
-                Con(2.0).into(),
-            )
-            .into(),
-            Div(
-                Mul(
-                    Pow(Sub(X.into(), Con(0.0).into()).into(), Con(1.0).into()).into(),
-                    Con(1.0).into(),
-                )
-                .into(),
-                Con(1.0).into(),
-            )
-            .into(),
-        )
-        .into(),
-    );
+    let func = Function::from("sin(x)");
 
-    let test_element = Pow((X + 1.).into(), Con(2.).into());
+    // Get the SeriesExpansion
+    // In this instance we're creating a Taylor expansion of order 5 centered around 0
+    let expansion = func.get_taylor_expansion(5, 0.).unwrap();
 
-    println!("{:?}", test_element.simplify().unwrap());
+    let func_expansion = Function::from(expansion);
+    let element = func_expansion.elementary();
+    let derivative = derivative_of(&func_expansion);
+    println!("{:?}", derivative.elementary());
 }

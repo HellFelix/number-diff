@@ -26,9 +26,7 @@ impl Elementary {
         let callable_self = self.clone().call();
         let callable_new = new_function.clone().call();
         for i in -1000..1000 {
-            if callable_self(i as f64) != callable_new(i as f64) {
-                println!("{self:?}");
-                println!("{new_function:?}");
+            if callable_self(i as f64).round() != callable_new(i as f64).round() {
                 return Err(Error::InternalError(String::from(
                     format!("while attempting to simplify {self:?}, the simplification method yielded inconsistent results. Found that self({i}) != new_function({i}). Left hand side found to be {}. Right hand side found to be {}", callable_self(i as f64), callable_new(i as f64)))));
             }
@@ -53,7 +51,7 @@ impl Elementary {
         }
     }
 
-    fn simplify_power(base: &Self, exp: &Self) -> Result<Self, Error> {
+    pub fn simplify_power(base: &Self, exp: &Self) -> Result<Self, Error> {
         match exp.clone() {
             Con(numb) => {
                 if numb == 0. {
@@ -61,14 +59,21 @@ impl Elementary {
                 } else if numb == 1. {
                     Ok(base.clone())
                 } else {
-                    Ok(Pow(base.simplify()?.into(), exp.simplify()?.into()))
+                    match base {
+                        X => Ok(Pow(base.clone().into(), exp.clone().into())),
+                        Pow(inner_base, inner_exp) => Ok(Pow(
+                            inner_base.clone(),
+                            (exp.clone() * (**inner_exp).clone()).simplify()?.into(),
+                        )),
+                        _ => Ok(Pow(base.simplify()?.into(), exp.simplify()?.into())),
+                    }
                 }
             }
             _ => match base {
                 X => Ok(Pow(base.clone().into(), exp.clone().into())),
                 Pow(inner_base, inner_exp) => Ok(Pow(
                     inner_base.clone(),
-                    (exp.clone() * (**inner_exp).clone()).into(),
+                    (exp.clone() * (**inner_exp).clone()).simplify()?.into(),
                 )),
                 _ => Ok(Pow(base.simplify()?.into(), exp.simplify()?.into())),
             },

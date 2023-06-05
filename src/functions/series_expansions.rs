@@ -62,6 +62,8 @@ impl Elementary {
             res += term;
         }
 
+        res = res.simplify()?;
+
         // TODO: check the result against lagrange_error_bound to make sure the maximum error is
         // within the bound
 

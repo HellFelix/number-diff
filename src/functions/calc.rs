@@ -168,7 +168,7 @@ impl Div<&mut Self> for Elementary {
 }
 impl DivAssign for Elementary {
     fn div_assign(&mut self, rhs: Self) {
-        *self = rhs / self.clone();
+        *self = self.clone() / rhs;
     }
 }
 

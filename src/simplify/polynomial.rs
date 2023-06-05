@@ -114,7 +114,7 @@ fn get_terms(polynomial: Elementary) -> Result<Vec<Elementary>, Error> {
                 terms.push(pol);
             }
             for pol in get_terms((*pol2).clone())? {
-                terms.push(Mul(pol.into(), Con(-1.).into()));
+                terms.push(Mul(pol.into(), Con(-1.).into()).simplify()?);
             }
         }
         Mul(ref pol1, ref pol2) => {
@@ -125,7 +125,7 @@ fn get_terms(polynomial: Elementary) -> Result<Vec<Elementary>, Error> {
                 }
             } else if pol2.is_constant() {
                 for mut term in get_terms(simplify_polynomial((**pol1).clone())?)? {
-                    term *= (**pol2).clone();
+                    term *= Con((**pol2).clone().call()(0.));
                     terms.push(term);
                 }
             } else {
@@ -173,8 +173,13 @@ fn expand_term(polynomial: &Elementary) -> Result<Vec<Elementary>, Error> {
                 // multinomal theorem
                 if let Con(exp) = (*power).clone() {
                     let mut expansion: Vec<Elementary> = Vec::new();
-                    for term in expand_multinomal(get_terms((*pol1).clone())?, exp as usize)? {
-                        expansion.push(term.simplify_operations()?);
+                    let base_terms = get_terms((*pol1).clone())?;
+                    if base_terms.len() == 1 {
+                        expansion.push(polynomial.simplify_operations()?);
+                    } else {
+                        for term in expand_multinomal(base_terms, exp as usize)? {
+                            expansion.push(term.simplify_operations()?);
+                        }
                     }
                     Ok(expansion)
                 } else {
@@ -195,13 +200,26 @@ fn expand_mul(term1: &Elementary, term2: &Elementary) -> Result<Vec<Elementary>,
         _ => term1.clone(),
     };
     let simplified_term2 = match term2 {
-        Pow(_, _) => term1.simplify_operations()?,
+        Pow(_, _) => term2.simplify_operations()?,
         _ => term2.clone(),
     };
 
     expansion.push(simplified_term1 * simplified_term2);
 
     Ok(expansion)
+}
+
+// takes a polynomial chunk of the form ax^b and retuns (a, b)
+fn deconstruct_term(term: &Elementary) -> Result<(Elementary, Elementary), Error> {
+    if let Mul(coefficient, power) = term {
+        if let Pow(_, exp) = (**power).clone() {
+            return Ok(((**coefficient).clone(), (*exp).clone()));
+        }
+    }
+
+    Err(Error::InternalError(String::from(
+        "Attempted to deconstruct a term, but the term was not a polynomial chunk",
+    )))
 }
 
 // convert polynomial to the form f(x) = ax^b
@@ -225,11 +243,23 @@ fn convert_term(polynomial: Elementary) -> Result<Elementary, Error> {
             } else if pol2.is_constant() {
                 convert_mul(pol2, pol1, &polynomial)
             } else {
-                Err(Error::SimplifyError(
+                // if we can convert the terms individually, then we can later put them together
+                if let (Ok(term1), Ok(term2)) =
+                    (convert_term((*pol1).clone()), convert_term((*pol2).clone()))
+                {
+                    let deconstruct_term1 = deconstruct_term(&term1)?;
+                    let deconstruct_term2 = deconstruct_term(&term2)?;
+                    let new_coefficient = deconstruct_term1.0 * deconstruct_term2.0;
+                    let new_power =
+                        Pow(X.into(), (deconstruct_term1.1 + deconstruct_term2.1).into());
+                    Ok(new_coefficient * new_power)
+                } else {
+                    Err(Error::SimplifyError(
             polynomial.clone(),
             String::from(
                 "Attempted to perform polynomial simplification on a non-polynomial expression",
             )))
+                }
             }
         }
         Div(pol1, pol2) => {
@@ -255,12 +285,19 @@ fn convert_term(polynomial: Elementary) -> Result<Elementary, Error> {
                 polynomial.clone().simplify_constant()?.into(),
                 Pow(X.into(), Con(0.).into()).into(),
             )),
-            _ => Err(Error::SimplifyError(
-                polynomial.clone(),
-                String::from(
-                    "Attempted to simplify a polynomial whose base is neither X nor a constant",
-                ),
-            )),
+            _ => {
+                if let Pow(inner_base, inner_exp) = polynomial.simplify_operations()? {
+                    if let X = *inner_base {
+                        return Ok(Pow(inner_base, inner_exp));
+                    }
+                }
+                Err(Error::SimplifyError(
+                    polynomial.clone(),
+                    String::from(
+                        "Attempted to simplify a polynomial whose base is neither X nor a constant",
+                    ),
+                ))
+            }
         },
         X => Ok(Mul(Con(1.).into(), Pow(X.into(), Con(1.).into()).into())),
         Con(numb) => Ok(Mul(Con(numb).into(), Pow(X.into(), Con(0.).into()).into()).into()),
@@ -334,14 +371,10 @@ fn group_together(terms: Vec<Elementary>) -> Result<HashMap<i128, f64>, Error> {
     Ok(map)
 }
 
-fn polynomial_long_division(polynomial: &Elementary) -> Result<Elementary, Error> {
-    unimplemented!()
-}
-
 // Multinomial expansion
 fn expand_multinomal(terms: Vec<Elementary>, exponent: usize) -> Result<Vec<Elementary>, Error> {
     let n = &terms.len();
-    let combinations = generate_combinations(*n);
+    let combinations = generate_combinations(*n, exponent);
 
     let mut res_terms: Vec<Elementary> = Vec::new();
 
@@ -357,7 +390,7 @@ fn expand_multinomal(terms: Vec<Elementary>, exponent: usize) -> Result<Vec<Elem
             );
         }
 
-        new_term.simplify()?;
+        new_term = new_term.simplify_operations()?;
 
         res_terms.push(new_term);
     }
@@ -374,29 +407,33 @@ fn multinomial_coefficient(n_terms: usize, indexes: &Vec<usize>) -> usize {
     factorial(n_terms) / denomenator
 }
 
-fn generate_combinations(len: usize) -> Vec<Vec<usize>> {
+fn generate_combinations(len: usize, exponent: usize) -> Vec<Vec<usize>> {
     let mut combinations: Vec<Vec<usize>> = Vec::new();
     let comb = vec![0; len];
 
-    iterate_combination(comb, &mut combinations);
+    iterate_combination(comb, &mut combinations, exponent);
 
     combinations.clear_duplicates();
 
     combinations
 }
 
-fn iterate_combination(comb: Vec<usize>, combinations: &mut Vec<Vec<usize>>) {
+fn iterate_combination(comb: Vec<usize>, combinations: &mut Vec<Vec<usize>>, exponent: usize) {
     for i in 0..comb.len() {
         let mut new_comb = comb.clone();
         new_comb[i] += 1;
 
         let sum: usize = new_comb.iter().sum();
-        if sum == comb.len() {
+        if sum == exponent {
             combinations.push(new_comb);
         } else {
-            iterate_combination(new_comb, combinations);
+            iterate_combination(new_comb, combinations, exponent);
         }
     }
+}
+
+fn polynomial_long_division(polynomial: &Elementary) -> Result<Elementary, Error> {
+    unimplemented!()
 }
 
 trait Dedup<T: PartialEq + Clone> {
