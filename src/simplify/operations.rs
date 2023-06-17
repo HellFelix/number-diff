@@ -23,15 +23,32 @@ impl Elementary {
     // makes sure that the simplified funciton is correct, that is, it will yield the same result
     // upon calling for all numbers within its definition set.
     fn check_simplification(&self, new_function: &Self) -> Result<Self, Error> {
-        let callable_self = self.clone().call();
-        let callable_new = new_function.clone().call();
         for i in -1000..1000 {
-            if callable_self(i as f64).round() != callable_new(i as f64).round() {
+            if !self.is_within_margin(new_function, i as f64) {
                 return Err(Error::InternalError(String::from(
-                    format!("while attempting to simplify {self:?}, the simplification method yielded inconsistent results. Found that self({i}) != new_function({i}). Left hand side found to be {}. Right hand side found to be {}", callable_self(i as f64), callable_new(i as f64)))));
+                    format!("while attempting to simplify {self:?}, the simplification method yielded inconsistent results. Found that self({i}) != new_function({i})." ))));
             }
         }
         Ok(new_function.to_owned())
+    }
+
+    fn is_within_margin(&self, other: &Self, point: f64) -> bool {
+        let callable_self = self.clone().call();
+        let callable_new = other.clone().call();
+
+        // if the original function returns Nan, then the simplification may have gotten rid of the
+        // issue
+        if callable_self(point).is_nan() {
+            return true;
+        } else if callable_self(point).is_infinite() && callable_new(point).is_infinite() {
+            return true;
+        } else {
+            // if not, the value must be within 1% of the original value + 1e-5
+            let margin = (callable_self(point) * 0.01).abs() + 1e-5;
+
+            callable_new(point) > (callable_self(point) - margin)
+                && callable_new(point) < (callable_self(point) + margin)
+        }
     }
 
     // used for functions of category ClusterFuck in order to break down and simplify each
@@ -106,15 +123,15 @@ impl Elementary {
             }
 
             let mut new_numerator = Con(constant_factor);
-            for i in 0..numerator.len() {
+            for (i, term) in numerator.iter().enumerate() {
                 if !removed_numerator.contains(&i) {
-                    new_numerator = new_numerator * numerator[i].clone();
+                    new_numerator *= term.clone();
                 }
             }
             let mut new_denomenator = Con(1.);
-            for i in 0..denomenator.len() {
+            for (i, term) in denomenator.iter().enumerate() {
                 if !removed_denomenator.contains(&i) {
-                    new_denomenator = new_denomenator * denomenator[i].clone();
+                    new_denomenator *= term.clone();
                 }
             }
 

@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    sync::Arc,
+};
 
 use crate::{
     factorial,
@@ -32,7 +35,7 @@ pub fn simplify_polynomial(polynomial: Elementary) -> Result<Elementary, Error> 
         // we have a regular polynomial
 
         // split the polynomial and get the individual terms
-        let terms = get_terms(polynomial.clone())?;
+        let terms = get_terms(polynomial)?;
 
         // expand each term
         let mut expanded_terms: Vec<Elementary> = Vec::new();
@@ -58,8 +61,8 @@ pub fn simplify_polynomial(polynomial: Elementary) -> Result<Elementary, Error> 
         let mut simplified_polynomial =
             get_polynomial_chunk(*groups.get(keys[0]).unwrap(), *keys[0]);
 
-        for i in 1..keys.len() {
-            simplified_polynomial += get_polynomial_chunk(*groups.get(keys[i]).unwrap(), *keys[i]);
+        for key in keys.iter().skip(1) {
+            simplified_polynomial += get_polynomial_chunk(*groups.get(key).unwrap(), **key);
         }
 
         Ok(simplified_polynomial)
@@ -68,11 +71,7 @@ pub fn simplify_polynomial(polynomial: Elementary) -> Result<Elementary, Error> 
 
 fn is_rational(polynomial: Elementary) -> bool {
     if let Div(_, pol2) = polynomial {
-        if !(*pol2).is_constant() {
-            true
-        } else {
-            false
-        }
+        !(*pol2).is_constant()
     } else {
         false
     }
@@ -82,7 +81,7 @@ fn get_polynomial_chunk(coefficient: f64, degree: i128) -> Elementary {
     if coefficient == 0. {
         Con(0.)
     } else if degree == 0 {
-        Con(coefficient.clone())
+        Con(coefficient)
     } else if coefficient == 1. {
         if degree == 1 {
             X
@@ -91,7 +90,7 @@ fn get_polynomial_chunk(coefficient: f64, degree: i128) -> Elementary {
         }
     } else {
         Mul(
-            Con(coefficient.clone()).into(),
+            Con(coefficient).into(),
             Pow(X.into(), Con(degree as f64).into()).into(),
         )
     }
@@ -165,7 +164,7 @@ fn expand_term(polynomial: &Elementary) -> Result<Vec<Elementary>, Error> {
         }
         Pow(pol1, power) => {
             if let X = (*pol1).clone() {
-                return Ok(vec![polynomial.to_owned()]);
+                Ok(vec![polynomial.to_owned()])
             } else if let Con(_) = (*pol1).clone() {
                 // this polynomial should be a constant
                 Ok(vec![polynomial.clone().simplify()?])
@@ -223,7 +222,7 @@ fn deconstruct_term(term: &Elementary) -> Result<(Elementary, Elementary), Error
 }
 
 // convert polynomial to the form f(x) = ax^b
-fn convert_term(polynomial: Elementary) -> Result<Elementary, Error> {
+pub fn convert_term(polynomial: Elementary) -> Result<Elementary, Error> {
     match polynomial.clone() {
         Mul(pol1, pol2) => {
             if let Con(numb) = (*pol1).clone() {
@@ -255,7 +254,7 @@ fn convert_term(polynomial: Elementary) -> Result<Elementary, Error> {
                     Ok(new_coefficient * new_power)
                 } else {
                     Err(Error::SimplifyError(
-            polynomial.clone(),
+            polynomial,
             String::from(
                 "Attempted to perform polynomial simplification on a non-polynomial expression",
             )))
@@ -264,25 +263,25 @@ fn convert_term(polynomial: Elementary) -> Result<Elementary, Error> {
         }
         Div(pol1, pol2) => {
             if pol2.is_constant() {
-                if let Mul(mut coefficient, power) = convert_term((*pol1).clone())? {
+                if let Mul(coefficient, power) = convert_term((*pol1).clone())? {
                     let new_coefficient = (*coefficient).clone() / (*pol2).clone().call()(0.);
                     Ok(Mul(new_coefficient.into(), power))
                 } else {
-                    Err(Error::SimplifyError(polynomial.clone(), String::from("Internal Error, polynomial simplification yielded an unexpected result")))
+                    Err(Error::SimplifyError(polynomial, String::from("Internal Error, polynomial simplification yielded an unexpected result")))
                 }
             } else {
                 Err(Error::SimplifyError(
-                    polynomial.clone(),
+                    polynomial,
                     String::from(
                         "Attempted to simplify a rational polynomial as a regular polynomial",
                     ),
                 ))
             }
         }
-        Pow(base, exp) => match (*base).clone() {
-            X => Ok(Mul(Con(1.).into(), polynomial.clone().into())),
+        Pow(base, _) => match (*base).clone() {
+            X => Ok(Mul(Con(1.).into(), polynomial.into())),
             Con(_) => Ok(Mul(
-                polynomial.clone().simplify_constant()?.into(),
+                polynomial.simplify_constant()?.into(),
                 Pow(X.into(), Con(0.).into()).into(),
             )),
             _ => {
@@ -292,7 +291,7 @@ fn convert_term(polynomial: Elementary) -> Result<Elementary, Error> {
                     }
                 }
                 Err(Error::SimplifyError(
-                    polynomial.clone(),
+                    polynomial,
                     String::from(
                         "Attempted to simplify a polynomial whose base is neither X nor a constant",
                     ),
@@ -300,9 +299,9 @@ fn convert_term(polynomial: Elementary) -> Result<Elementary, Error> {
             }
         },
         X => Ok(Mul(Con(1.).into(), Pow(X.into(), Con(1.).into()).into())),
-        Con(numb) => Ok(Mul(Con(numb).into(), Pow(X.into(), Con(0.).into()).into()).into()),
+        Con(numb) => Ok(Mul(Con(numb).into(), Pow(X.into(), Con(0.).into()).into())),
         _ => Err(Error::SimplifyError(
-            polynomial.clone(),
+            polynomial,
             String::from("Attempted to simplify a non-polynomial using polynomial-simplification"),
         )),
     }
@@ -317,33 +316,33 @@ fn convert_mul(
     if let Pow(base, exp) = (*pol2).clone() {
         if let X = (*base).clone() {
             if exp.is_digit()? {
-                return Ok(polynomial.clone());
+                Ok(polynomial.clone())
             } else {
-                return Err(Error::SimplifyError(
+                Err(Error::SimplifyError(
                     polynomial.clone(),
                     String::from("Non-digit exponent was found during polynomial simplification"),
-                ));
+                ))
             }
         } else {
-            return Ok(Mul(
+            Ok(Mul(
                 polynomial.clone().simplify_constant()?.into(),
                 Pow(X.into(), Con(0.).into()).into(),
-            ));
+            ))
         }
     } else if let X = (*pol2).clone() {
-        return Ok(Mul(pol1.into(), Pow(X.into(), Con(1.).into()).into()));
+        Ok(Mul(pol1, Pow(X.into(), Con(1.).into()).into()))
     } else if (*pol2).clone().is_constant() {
-        return Ok(Mul(
+        Ok(Mul(
             polynomial.clone().simplify_constant()?.into(),
             Pow(X.into(), Con(0.).into()).into(),
-        ));
+        ))
     } else {
-        return Err(Error::SimplifyError(
+        Err(Error::SimplifyError(
             polynomial.clone(),
             String::from(
                 "Attempted to perform polynomial simplification on a non-polynomail expression",
             ),
-        ));
+        ))
     }
 }
 
@@ -352,17 +351,17 @@ fn group_together(terms: Vec<Elementary>) -> Result<HashMap<i128, f64>, Error> {
 
     for term in terms {
         if let Mul(coefficient, power) = term {
-            if let Pow(base, exp) = (*power).clone() {
+            if let Pow(_, exp) = (*power).clone() {
                 // insert into the map
                 let degree = (*exp).clone().call()(0.) as i128;
                 let coefficient = (*coefficient).clone().call()(0.);
-                if map.contains_key(&degree) {
-                    let mut existing_value = map.get_mut(&degree).expect("This should not fail");
+                if let Entry::Vacant(e) = map.entry(degree) {
+                    e.insert(coefficient);
+                } else {
+                    let existing_value = map.get_mut(&degree).expect("This should not fail");
                     // the unwrapping should not fail because the previous step ensures that the
                     // key does not already exist within the map
                     *existing_value += coefficient;
-                } else {
-                    map.insert(degree, coefficient);
                 }
             }
         }
@@ -378,16 +377,13 @@ fn expand_multinomal(terms: Vec<Elementary>, exponent: usize) -> Result<Vec<Elem
 
     let mut res_terms: Vec<Elementary> = Vec::new();
 
-    for i in 0..combinations.len() {
-        let coefficient = Con(multinomial_coefficient(exponent, &combinations[i]) as f64);
+    for (i, comb) in combinations.iter().enumerate() {
+        let coefficient = Con(multinomial_coefficient(exponent, comb) as f64);
         let mut new_term = coefficient;
 
         let terms = terms.clone();
-        for j in 0..terms.len() {
-            new_term *= Pow(
-                terms[j].clone().into(),
-                Con(combinations[i][j] as f64).into(),
-            );
+        for (j, term) in terms.iter().enumerate() {
+            new_term *= Pow(term.clone().into(), Con(combinations[i][j] as f64).into());
         }
 
         new_term = new_term.simplify_operations()?;
@@ -430,10 +426,6 @@ fn iterate_combination(comb: Vec<usize>, combinations: &mut Vec<Vec<usize>>, exp
             iterate_combination(new_comb, combinations, exponent);
         }
     }
-}
-
-fn polynomial_long_division(polynomial: &Elementary) -> Result<Elementary, Error> {
-    unimplemented!()
 }
 
 trait Dedup<T: PartialEq + Clone> {

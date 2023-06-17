@@ -1,5 +1,5 @@
 mod classification;
 mod exponential;
 mod operations;
-mod polynomial;
+pub mod polynomial;
 mod trigonometric;

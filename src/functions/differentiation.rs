@@ -1,10 +1,10 @@
 use crate::{
     Elementary::{self, *},
-    Function,
+    Error, Function,
 };
 use std::{f64::consts::E, sync::Arc};
 impl Elementary {
-    pub fn differentiate(self) -> Self {
+    fn differentiate(self) -> Self {
         match self {
             Sin(func) => Mul(
                 Arc::new(Cos(func.clone())),
@@ -159,6 +159,12 @@ impl Elementary {
             Con(_) => Con(0.),
             X => Con(1.),
         }
+    }
+    pub fn derivative(self) -> Result<Elementary, Error> {
+        self.differentiate().simplify()
+    }
+    pub fn derivative_unsimplified(self) -> Elementary {
+        self.differentiate()
     }
 }
 

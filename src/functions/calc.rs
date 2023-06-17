@@ -1,6 +1,7 @@
 use crate::Elementary::*;
 use std::{
     f64::consts::E,
+    iter::Sum,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub},
     sync::Arc,
 };
@@ -225,6 +226,17 @@ impl Div<Elementary> for Arc<Elementary> {
     fn div(self, rhs: Elementary) -> Self::Output {
         let elem = force_unwrap(&self);
         elem / rhs
+    }
+}
+
+impl Sum<Self> for Elementary {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let terms: Vec<Elementary> = iter.collect();
+        let mut res = terms[0].clone();
+        for i in 1..terms.len() {
+            res += terms[i].clone();
+        }
+        res
     }
 }
 
@@ -478,8 +490,9 @@ impl Function {
     /// Turns self into the derivative of self
     ///
     /// i.e. f(x) ⟹ f'(x)
-    pub fn differentiate(&mut self) {
-        self.func = self.elementary().to_owned().differentiate();
+    pub fn differentiate(&mut self) -> Result<(), Error> {
+        self.func = self.elementary().to_owned().derivative()?;
+        Ok(())
     }
 
     /// Turns the given Function instance into a Taylor series expansion centered around the value

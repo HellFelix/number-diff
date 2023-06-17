@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time};
 
 use crate::{
     Elementary::{self, *},
@@ -41,16 +41,20 @@ impl Elementary {
         }
     }
 
-    pub fn expand_taylor(&self, order: u8, a: f64) -> Result<SeriesExpansion, Error> {
+    pub fn expand_taylor(&self, order: u8, centre: f64) -> Result<SeriesExpansion, Error> {
         let mut terms: Vec<Elementary> = Vec::new();
 
         let mut current_derivative = self.clone();
-        let first_term = current_derivative.clone().call()(a);
+
+        let first_term = current_derivative.clone().call()(centre);
+
         terms.push(Con(first_term));
+
         for i in 1..=order {
-            current_derivative = current_derivative.differentiate();
-            let ith_term = Pow(Arc::new(X - a), Arc::new(Con(i as f64)))
-                * current_derivative.clone().call()(a)
+            current_derivative = current_derivative.derivative_unsimplified();
+
+            let ith_term = Pow(Arc::new(X - centre), Arc::new(Con(i as f64)))
+                * current_derivative.clone().call()(centre)
                 / (factorial(i as usize) as f64);
 
             terms.push(ith_term);
@@ -69,9 +73,4 @@ impl Elementary {
 
         Ok(SeriesExpansion::Taylor(res))
     }
-}
-
-// returns the greatest possible remainder of a Taylor series expansion.
-fn lagrange_error_bound(function: Elementary, order: u8, a: f64) -> f64 {
-    todo!()
 }
