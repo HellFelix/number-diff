@@ -1,11 +1,9 @@
-use std::{sync::Arc, time};
+use std::sync::Arc;
 
 use crate::{
     Elementary::{self, *},
-    Error, Function,
+    Error, Factorial, Function,
 };
-
-use super::utils::factorial;
 
 #[derive(Debug, Clone)]
 pub enum SeriesExpansion {
@@ -55,7 +53,7 @@ impl Elementary {
 
             let ith_term = Pow(Arc::new(X - centre), Arc::new(Con(i as f64)))
                 * current_derivative.clone().call()(centre)
-                / (factorial(i as usize) as f64);
+                / ((i as usize).factorial() as f64);
 
             terms.push(ith_term);
         }

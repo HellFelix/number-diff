@@ -1,5 +1,7 @@
 use std::f64::consts::PI;
 
+use number_diff::gamma_function;
+use number_diff::Factorial;
 use number_diff::Function;
 use number_diff::Integrate;
 
@@ -39,4 +41,12 @@ fn specified_precision_integration() {
     let rounded_value = (value * 100000.).round() / 100000.;
 
     assert_eq!(rounded_value, 1.);
+}
+
+#[test]
+fn gamma_integer() {
+    for i in 0..100 {
+        println!("{i}");
+        assert_eq!(i.factorial(), gamma_function(i as f64 + 1.).round());
+    }
 }

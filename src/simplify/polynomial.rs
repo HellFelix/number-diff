@@ -4,9 +4,8 @@ use std::{
 };
 
 use crate::{
-    factorial,
     Elementary::{self, *},
-    Error,
+    Error, Factorial,
 };
 
 use itertools::Itertools;
@@ -397,10 +396,10 @@ fn expand_multinomal(terms: Vec<Elementary>, exponent: usize) -> Result<Vec<Elem
 fn multinomial_coefficient(n_terms: usize, indexes: &Vec<usize>) -> usize {
     let mut denomenator = 1;
     for index in indexes {
-        denomenator *= factorial(*index);
+        denomenator *= (*index).factorial();
     }
 
-    factorial(n_terms) / denomenator
+    n_terms.factorial() / denomenator
 }
 
 fn generate_combinations(len: usize, exponent: usize) -> Vec<Vec<usize>> {
