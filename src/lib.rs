@@ -55,4 +55,5 @@ pub enum Error {
     SimplifyError(Elementary, String),
     InternalError(String),
     ExpansionError(String),
+    InputError(String),
 }

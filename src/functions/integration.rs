@@ -1,87 +1,150 @@
-use crate::{
-    Elementary::{self, *},
-    Error,
-};
+use crate::{Elementary, Error, Func, Function};
 
-use super::super::simplify::polynomial::convert_term;
+/// types that implement the [Integrate](crate::Integrate) trait can safely be integrated within
+/// the domain ℝ.
+pub trait Integrate {
+    /// Method will return an instance of [Integral](crate::Integral) that can be taylored to
+    /// specific usecases.
+    ///
+    /// Example:
+    /// ```rust
+    /// let function = Function::from("sin(x)");
+    ///
+    /// let mut integral = function.integrate();
 
-// The way to handle integration:
-//
-// 1, Create a series expansion at both start and stop
-// 2. Get primative functions of both series expansions (polynomials are easy to integrate)
-// 3. Evaluate the primative function at their respective seriesexpansion centre
-// 4. Evaluate the integral
-impl Elementary {
-    pub fn integrate(&self, start: f64, stop: f64, precision: u8) -> Result<f64, Error> {
-        let lower_bound = self.get_primative_at(start, precision)?;
-        let upper_bound = self.get_primative_at(stop, precision)?;
-        println!("{lower_bound}");
-        println!("{upper_bound}");
-        Ok(upper_bound - lower_bound)
-    }
+    /// // specify bounds and precision for the integral
+    /// integral
+    ///     .set_lower_bound(0.)
+    ///     .set_upper_bound(PI / 2.)
+    ///     .set_precision(20000);
+    ///
+    /// // evaluate the integral
+    /// let value = integral.evaluate().unwrap();
+    /// // note that the value of the evaluated integral must be unwrapped if using the `integrate()`
+    /// // method because the method cannot guarantee that bounds have been set at the point of
+    /// // evaluating. The evaluate_integral() method which is implemented for any instance with the
+    /// // Integrate trait is safer and is guaranteed to yield a valid result.
+    ///
+    /// // round the value to 5 decimal places
+    /// let rounded_value = (value * 100000.).round() / 100000.;
+    ///
+    /// assert_eq!(rounded_value, 1.);
+    /// ```
+    fn integrate(&self) -> Integral;
 
-    fn get_primative_at(&self, point: f64, precision: u8) -> Result<f64, Error> {
-        let series = self.expand_taylor(precision, point)?.get_elementary();
+    /// Method will return the value of the definite integral of the function evaluated from the
+    /// provided lower and upper bound.
+    ///
+    /// Example:
+    /// ```
+    /// let function = Function::from("cos(x)");
+    ///
+    /// // the evaluate_integral() method will automatically round the result to five decimal points.
+    /// // This is because higher precision cannot be guaranteed with using the standard precision set
+    /// // for the method. Provided that the function is defined for all values between the lower and
+    /// // upper bounds, the method will always return a valid result.
+    /// let value = function.evaluate_integral(0., PI);
+    ///
+    /// assert_eq!(value, 0.);
+    /// ```
+    fn evaluate_integral(&self, lower_bound: f64, upper_bound: f64) -> f64;
+}
 
-        let anti_derivative = series.integrate_polynomial()?;
+const STANDARD_PRECISION: u16 = 1000;
 
-        Ok(anti_derivative.call()(point))
-    }
+pub struct Integral {
+    function: Func,
+    lower_bound: Option<f64>,
+    upper_bound: Option<f64>,
+    precision: u16,
+}
 
-    // coming into this function, the polynomials should be fully simplified such that each term is of
-    // the form ax^b
-    // These terms are then integrated seperatly.
-    fn integrate_polynomial(&self) -> Result<Elementary, Error> {
-        let terms = self.break_polynomial()?;
-
-        let primative: Elementary = terms
-            .iter()
-            .map(|x| {
-                if let Mul(coefficient, power) = x {
-                    if let Pow(_, exp) = (**power).clone() {
-                        Self::integrate_polynomial_chunk(
-                            (**coefficient).clone().call()(0.),
-                            (*exp).clone().call()(0.),
-                        )
-                    } else {
-                        unreachable!()
-                    }
-                } else {
-                    unreachable!()
-                }
-            })
-            .sum();
-
-        Ok(primative)
-    }
-
-    fn break_polynomial(&self) -> Result<Vec<Elementary>, Error> {
-        let mut chunks: Vec<Elementary> = Vec::new();
-
-        self.iterate_break(&mut chunks)?;
-
-        Ok(chunks)
-    }
-
-    fn iterate_break(&self, chunks: &mut Vec<Elementary>) -> Result<(), Error> {
-        if let Add(chunk, new_polynomial) = self {
-            chunks.push(convert_term((**chunk).clone())?);
-            (*new_polynomial).clone().iterate_break(chunks)?;
-        } else {
-            // it's going to be a polynomial chunk
-            chunks.push(convert_term((*self).clone())?);
+impl Integral {
+    pub fn vacant(function: Func) -> Self {
+        Self {
+            function,
+            lower_bound: None,
+            upper_bound: None,
+            precision: STANDARD_PRECISION,
         }
-        Ok(())
     }
 
-    fn integrate_polynomial_chunk(coefficient: f64, exponent: f64) -> Elementary {
-        let new_exponent = exponent + 1.;
-        let new_coefficient = coefficient / (new_exponent);
-
-        let term = Mul(
-            Con(new_coefficient).into(),
-            Pow(X.into(), Con(new_exponent).into()).into(),
-        );
-        term
+    pub fn set_lower_bound(&mut self, lower_bound: f64) -> &mut Self {
+        self.lower_bound = Some(lower_bound);
+        self
     }
+
+    pub fn set_upper_bound(&mut self, upper_bound: f64) -> &mut Self {
+        self.upper_bound = Some(upper_bound);
+        self
+    }
+
+    pub fn set_precision(&mut self, precision: u16) -> &mut Self {
+        self.precision = precision;
+        self
+    }
+
+    pub fn evaluate(&self) -> Result<f64, Error> {
+        if let (Some(lower_bound), Some(upper_bound)) = (self.lower_bound, self.upper_bound) {
+            Ok(simpsons_rule(
+                &self.function,
+                lower_bound,
+                upper_bound,
+                self.precision,
+            ))
+        } else {
+            Err(Error::InternalError(String::from(
+                "Bounds of integration must be set in order to evaluate the integral",
+            )))
+        }
+    }
+}
+
+/// See [Integrate](crate::Integrate) for usage and examples.
+impl Integrate for Elementary {
+    fn integrate(&self) -> Integral {
+        Integral::vacant(self.clone().call())
+    }
+    /// Evaluating the integral gives a value of the integral with eight decimal places
+    fn evaluate_integral(&self, lower_bound: f64, upper_bound: f64) -> f64 {
+        unsafe {
+            let value = self
+                .integrate()
+                .set_lower_bound(lower_bound)
+                .set_upper_bound(upper_bound)
+                .evaluate()
+                .unwrap_unchecked(); // this unwrap will never fail because the upper and lower bounds
+                                     // will always be set
+            (value * 100000.).round() / 100000.
+        }
+    }
+}
+
+/// See [Integrate](crate::Integrate) for usage and examples.
+impl Integrate for Function {
+    fn integrate(&self) -> Integral {
+        self.elementary().integrate()
+    }
+    fn evaluate_integral(&self, lower_bound: f64, upper_bound: f64) -> f64 {
+        self.elementary()
+            .evaluate_integral(lower_bound, upper_bound)
+    }
+}
+
+fn simpsons_rule(funciton: &Func, lower_bound: f64, upper_bound: f64, precision: u16) -> f64 {
+    // note that n must be an even number for Simpson's rule to work
+    let n = precision * 2;
+    let dx = (upper_bound - lower_bound) / n as f64;
+    let mut sum: f64 = (1..n)
+        .map(|x| {
+            if x % 2 == 0 {
+                2. * funciton(lower_bound + x as f64 * dx)
+            } else {
+                4. * funciton(lower_bound + x as f64 * dx)
+            }
+        })
+        .sum();
+    sum += funciton(lower_bound) + funciton(upper_bound);
+
+    sum * dx / 3.
 }

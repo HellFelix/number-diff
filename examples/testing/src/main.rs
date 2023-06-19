@@ -1,14 +1,16 @@
-use std::time;
+use std::{
+    f64::{consts::PI, INFINITY},
+    time,
+};
 
 use number_diff::Function;
 
 fn main() {
-    let func = Function::from("sin(x)");
+    let func = Function::from("e^(-x)").elementary();
+
     let start = time::SystemTime::now();
-    let _integral = func.elementary().integrate(0., 10., 5);
-    println!(
-        "entire integration: {}ms",
-        start.elapsed().unwrap().as_millis()
-    );
-    println!("{_integral:?}");
+    let res = func.integrate(0., 1000. * PI, 10000);
+    println!("{}ms", start.elapsed().unwrap().as_millis());
+
+    println!("{res}");
 }
