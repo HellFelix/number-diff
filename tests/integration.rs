@@ -4,6 +4,7 @@ use number_diff::gamma_function;
 use number_diff::Factorial;
 use number_diff::Function;
 use number_diff::Integrate;
+use number_diff::Round;
 
 #[test]
 fn basic_integration() {
@@ -31,22 +32,63 @@ fn specified_precision_integration() {
         .set_precision(20000);
 
     // evaluate the integral
-    let value = integral.evaluate().unwrap();
+    let mut value = integral.evaluate().unwrap();
     // note that the value of the evaluated integral must be unwrapped if using the `integrate()`
     // method because the method cannot guarantee that bounds have been set at the point of
     // evaluating. The evaluate_integral() method which is implemented for any instance with the
     // Integrate trait is safer and is guaranteed to yield a valid result.
 
-    // round the value to 5 decimal places
-    let rounded_value = (value * 100000.).round() / 100000.;
+    // round the value to 10 decimal places
+    value.round_to(10);
 
-    assert_eq!(rounded_value, 1.);
+    assert_eq!(value, 1.);
 }
 
 #[test]
-fn gamma_integer() {
-    for i in 0..100 {
-        println!("{i}");
-        assert_eq!(i.factorial(), gamma_function(i as f64 + 1.).round());
+fn gamma_natural() {
+    // factorial test
+    for i in 0..=34 {
+        let correct_answer = i.factorial() as f64;
+        // the gamma function gives the correct answer with at least 10 valid significant figures
+        // given that x! = 𝜞(x+1)
+        assert_eq!(
+            gamma_function(i as f64 + 1.).with_significant_figures(10),
+            (i.factorial() as f64).with_significant_figures(10)
+        )
     }
+}
+
+#[test]
+fn gamma_float() {
+    // Since there is no other function that determines the values that the gamma function takes at
+    // non-natural numbers (the gamma function can be evaluated at the natural numbers using the
+    // factorial funciton), here, instead, we test some values for the gamma function.
+    //
+    // Every tested value should be within 5 significant figures.
+
+    const SIG_FIGS: u64 = 5;
+
+    // 𝜞(1.5) = 0.88622692545275801364908374167...
+    assert_eq!(
+        gamma_function(1.5).with_significant_figures(SIG_FIGS),
+        0.88622692545275801364908374167_f64.with_significant_figures(SIG_FIGS)
+    );
+
+    // 𝜞(1.7) = 0.9086387328532904499768...
+    assert_eq!(
+        gamma_function(1.7).with_significant_figures(SIG_FIGS),
+        0.9086387328532904499768_f64.with_significant_figures(SIG_FIGS)
+    );
+
+    // 𝜞(5.63) = 64.6459979854823802718011...
+    assert_eq!(
+        gamma_function(5.63).with_significant_figures(SIG_FIGS),
+        64.6459979854823802718011_f64.with_significant_figures(SIG_FIGS)
+    );
+
+    // 𝜞(20.634) = 8.080423451365037632441106519...*10^17
+    assert_eq!(
+        gamma_function(20.634).with_significant_figures(SIG_FIGS),
+        8.080423451365037632441106519e+17.with_significant_figures(SIG_FIGS)
+    );
 }

@@ -5,11 +5,11 @@ use crate::{Elementary::*, Function, Integrate};
 pub const COMPLEX_INFINITY: f64 = NAN;
 
 /// returns n! for numbers n ∈ ℕ
-fn factorial_integer(numb: usize) -> usize {
+fn factorial_integer(numb: u128) -> u128 {
     if numb == 0 {
         1
     } else {
-        let mut res: usize = 1;
+        let mut res: u128 = 1;
         for i in 1..=numb {
             res *= i;
         }
@@ -18,13 +18,33 @@ fn factorial_integer(numb: usize) -> usize {
     }
 }
 
+// TODO: make the gamma function work for values < 1
 pub fn gamma_function(z: f64) -> f64 {
     let inner_funciton = Mul(
         Pow(X.into(), Sub(Con(z).into(), Con(1.).into()).into()).into(),
         Pow(Con(E).into(), Mul(X.into(), Con(-1.).into()).into()).into(),
     );
 
-    inner_funciton.evaluate_integral(0., 100.)
+    // for whole numbers
+    if z.fract() == 0.0 {
+        // fraction part of the number is zero, meaning that the number is an integer
+        inner_funciton
+            .integrate()
+            .set_lower_bound(0.)
+            .set_upper_bound(100.)
+            .set_precision(1000)
+            .evaluate()
+            .unwrap()
+            .round_to(0)
+    } else {
+        inner_funciton
+            .integrate()
+            .set_lower_bound(0.)
+            .set_upper_bound(100.)
+            .set_precision(100000)
+            .evaluate()
+            .unwrap()
+    }
 }
 
 /// Allows the usage of factorials i.e. `x!`
@@ -48,9 +68,9 @@ pub trait Factorial {
 macro_rules! impl_factorial_natural {
     (for $($t:ty), +) => {
         $(impl Factorial for $t {
-            type Output = usize;
+            type Output = u128;
             fn factorial(&self) -> Self::Output {
-                factorial_integer(self.clone() as usize)
+                factorial_integer(self.clone() as u128)
             }
         })*
     };
@@ -68,7 +88,7 @@ macro_rules! impl_factorial_integer {
                     // negative integer
                     NAN
                 } else {
-                    factorial_integer(self.clone() as usize) as f64
+                    factorial_integer(self.clone() as u128) as f64
                 }
             }
         })*
@@ -89,9 +109,32 @@ macro_rules! impl_factorial_float {
 }
 impl_factorial_float!(for f32, f64);
 
+/// Allows the usage of rounding methods that are more specific than rust std's round() method.
 pub trait Round {
+    /// Rounds self (a number) to the given number of decimal places. This method is
+    /// mainly made for the f32 and f64 types since integer types already have no decimal places.
+    ///
+    /// Example:
+    /// ```rust
+    /// assert_eq!(23.3274.round_to(2), 23.33);
+    ///
+    /// assert_eq!((1. / 3.).round_to(5), 0.33333);
+    ///
+    /// // For integer types, rounding to a decimal point is the same as casting it to f64
+    /// assert_eq!(100_u8.round_to(10), 100.);
+    /// ```
     fn round_to(&mut self, decimal_places: u32) -> f64;
-    fn with_significant_figures(&mut self, digits: usize) -> Self;
+
+    /// Rounds self (a number) to the given number of significant figures.
+    /// Example:
+    /// ```rust
+    /// assert_eq!(14912387964_u128.with_significant_figures(5), 14912000000);
+    ///
+    /// assert_eq!(-4095_i32.with_significant_figures(1), -4000);
+    ///
+    /// assert_eq!(1234.5678_f64.with_significant_figures(6), 1234.57)
+    /// ```
+    fn with_significant_figures(&mut self, digits: u64) -> Self;
 }
 
 macro_rules! impl_round_float {
@@ -110,14 +153,14 @@ macro_rules! impl_round_float {
                 value
             }
 
-            fn with_significant_figures(&mut self, digits: usize) -> Self {
-                let value = if *self > 0 as Self {
-                    unimplemented!()
-                } else if *self == 0 as Self {
-                    0 as Self
+            fn with_significant_figures(&mut self, digits: u64) -> Self {
+                let order = (*self).log10().trunc() as u64;
+                let value = if digits <= order {
+                    ((*self) as isize).with_significant_figures(digits) as Self
                 } else {
-                    (-1 as Self) * (-1 as Self * self.clone()).with_significant_figures(digits)
+                    (*self * (10 as Self).powi((digits - order -1) as i32)).round() / (10 as Self).powi((digits - order -1) as i32)
                 };
+
 
                 *self = value as Self;
                 value
@@ -126,3 +169,25 @@ macro_rules! impl_round_float {
     };
 }
 impl_round_float!(for f32, f64);
+
+macro_rules! impl_round_int {
+    (for $($t:ty), +) => {
+        $(impl Round for $t {
+            #[allow(unused_variables)]
+            fn round_to(&mut self, decimal_places: u32) -> f64 {
+                *self as f64
+            }
+            fn with_significant_figures(&mut self, digits: u64) -> Self {
+                // move the decimal point to the appropriate spot so that we can round and then
+                // move it back
+                let order = (*self).ilog10() as u64;
+                let new_value = ((*self) as f64 / 10_f64.powi((order - digits +1) as i32)).round() * 10_f64.powi((order - digits +1) as i32);
+                // set new value
+                *self = new_value as Self;
+                *self
+            }
+        })*
+
+    };
+}
+impl_round_int!(for u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);

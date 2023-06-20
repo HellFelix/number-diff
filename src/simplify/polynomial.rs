@@ -396,10 +396,10 @@ fn expand_multinomal(terms: Vec<Elementary>, exponent: usize) -> Result<Vec<Elem
 fn multinomial_coefficient(n_terms: usize, indexes: &Vec<usize>) -> usize {
     let mut denomenator = 1;
     for index in indexes {
-        denomenator *= (*index).factorial();
+        denomenator *= (*index).factorial() as usize;
     }
 
-    n_terms.factorial() / denomenator
+    n_terms.factorial() as usize / denomenator
 }
 
 fn generate_combinations(len: usize, exponent: usize) -> Vec<Vec<usize>> {

@@ -1,4 +1,4 @@
-use crate::{Elementary, Error, Func, Function};
+use crate::{Elementary, Error, Func, Function, Round};
 
 /// types that implement the [Integrate](crate::Integrate) trait can safely be integrated within
 /// the domain ℝ.
@@ -25,11 +25,12 @@ pub trait Integrate {
     /// // evaluating. The evaluate_integral() method which is implemented for any instance with the
     /// // Integrate trait is safer and is guaranteed to yield a valid result.
     ///
-    /// // round the value to 5 decimal places
-    /// let rounded_value = (value * 100000.).round() / 100000.;
+    /// // round the value to 10 decimal places
+    /// value.round_to(10);
     ///
-    /// assert_eq!(rounded_value, 1.);
+    /// assert_eq!(value, 1.);
     /// ```
+    /// Also note that if the precision is not specified, it will default to 1000.
     fn integrate(&self) -> Integral;
 
     /// Method will return the value of the definite integral of the function evaluated from the
@@ -50,13 +51,13 @@ pub trait Integrate {
     fn evaluate_integral(&self, lower_bound: f64, upper_bound: f64) -> f64;
 }
 
-const STANDARD_PRECISION: u16 = 1000;
+const STANDARD_PRECISION: usize = 1000;
 
 pub struct Integral {
     function: Func,
     lower_bound: Option<f64>,
     upper_bound: Option<f64>,
-    precision: u16,
+    precision: usize,
 }
 
 impl Integral {
@@ -79,7 +80,7 @@ impl Integral {
         self
     }
 
-    pub fn set_precision(&mut self, precision: u16) -> &mut Self {
+    pub fn set_precision(&mut self, precision: usize) -> &mut Self {
         self.precision = precision;
         self
     }
@@ -108,14 +109,14 @@ impl Integrate for Elementary {
     /// Evaluating the integral gives a value of the integral with eight decimal places
     fn evaluate_integral(&self, lower_bound: f64, upper_bound: f64) -> f64 {
         unsafe {
-            let value = self
+            let mut value = self
                 .integrate()
                 .set_lower_bound(lower_bound)
                 .set_upper_bound(upper_bound)
                 .evaluate()
                 .unwrap_unchecked(); // this unwrap will never fail because the upper and lower bounds
                                      // will always be set
-            (value * 100000.).round() / 100000.
+            value.with_significant_figures(5)
         }
     }
 }
@@ -131,7 +132,7 @@ impl Integrate for Function {
     }
 }
 
-fn simpsons_rule(funciton: &Func, lower_bound: f64, upper_bound: f64, precision: u16) -> f64 {
+fn simpsons_rule(funciton: &Func, lower_bound: f64, upper_bound: f64, precision: usize) -> f64 {
     // note that n must be an even number for Simpson's rule to work
     let n = precision * 2;
     let dx = (upper_bound - lower_bound) / n as f64;
