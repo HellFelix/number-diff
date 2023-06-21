@@ -57,7 +57,7 @@ impl Elementary {
                 open_parenthesis = -1;
             }
 
-            // detect operations
+            // detect operations and constants
             if open_parenthesis == -1 {
                 if interp_slice[i] == "+"
                     || interp_slice[i] == "-"
@@ -79,7 +79,7 @@ impl Elementary {
                 } else {
                     // checking for constants
                     if let Ok(_) = &value[cut_index..=i].parse::<f64>() {
-                        // find the index at which the number ends
+                        // find the index at which the number end
                         let mut last_index = i;
                         'index: for j in i + 1..interp_slice.len() {
                             if let Ok(_) = &value[cut_index..j].parse::<f64>() {
@@ -124,9 +124,9 @@ impl Elementary {
         // order of operations
         while functions.len() != 1 {
             if iteration >= 10000 {
-                return Err(Error::ParseError(String::from(
-                    "Iteration limit reached while parsing function",
-                )));
+                return Err(Error::ParseError(String::from(format!(
+                    "Iteration limit reached while parsing function: {string}",
+                ))));
             } else {
                 iteration += 1;
             }
@@ -325,8 +325,8 @@ fn iterate_operation(functions: &mut Vec<ElemRef>, operation: ElemRef) -> Result
                         Arc::new(functions[i + 1].clone().convert()?),
                     )),
                     ElemRef::Add => ElemRef::Function(Add(
-                        Arc::new(functions[i - 1].clone().convert()?),
                         Arc::new(functions[i + 1].clone().convert()?),
+                        Arc::new(functions[i - 1].clone().convert()?),
                     )),
                     ElemRef::Sub => {
                         if i > 0 {

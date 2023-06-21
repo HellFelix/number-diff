@@ -1,6 +1,6 @@
-use std::f64::{consts::E, INFINITY, NAN};
+use std::f64::{consts::E, NAN};
 
-use crate::{Elementary::*, Function, Integrate};
+use crate::{Elementary::*, Integrate, EULER_MASCHERONI};
 
 pub const COMPLEX_INFINITY: f64 = NAN;
 
@@ -19,6 +19,7 @@ fn factorial_integer(numb: u128) -> u128 {
 }
 
 // TODO: make the gamma function work for values < 1
+/// Returns the value of 𝜞(z) as defined by ∫t^(z-1)e^(-t)dt evaluated from 0 to ∞.
 pub fn gamma_function(z: f64) -> f64 {
     let inner_funciton = Mul(
         Pow(X.into(), Sub(Con(z).into(), Con(1.).into()).into()).into(),
@@ -45,6 +46,42 @@ pub fn gamma_function(z: f64) -> f64 {
             .evaluate()
             .unwrap()
     }
+}
+
+/// the polygamma function 𝛙m(z) describes the relationship between 𝜞(z) and its derivatives. For instance 𝛙0(z) =
+/// 𝜞'(z)/𝜞(z). [See article](https://en.wikipedia.org/wiki/Polygamma_function)
+pub fn polygamma_function(z: f64, m: usize) -> f64 {
+    if m == 0 {
+        digamma_function(z)
+    } else {
+        let inner_funciton = Pow(Log(Con(E).into(), X.into()).into(), Con(m as f64).into())
+            * Pow(X.into(), Con(z - 1.).into())
+            / (Con(1.) - X);
+
+        -inner_funciton
+            .integrate()
+            .set_lower_bound(1e-10)
+            .set_upper_bound(1. - 1e-10)
+            .set_precision(10)
+            .evaluate()
+            .unwrap()
+    }
+}
+
+/// Special case of the polygamma function 𝛙m(z) where m=0, The integral definition of the function
+/// then changes. [See article](https://en.wikipedia.org/wiki/Digamma_function#Integral_representations)
+pub fn digamma_function(z: f64) -> f64 {
+    let inner_funciton = (Con(1.) - Pow(X.into(), Con(z - 1.).into())) / (Con(1.) - X);
+
+    let integral_value = inner_funciton
+        .integrate()
+        .set_lower_bound(0.)
+        .set_upper_bound(1. - 1e-10)
+        .set_precision(1000)
+        .evaluate()
+        .unwrap();
+
+    integral_value - EULER_MASCHERONI
 }
 
 /// Allows the usage of factorials i.e. `x!`
@@ -102,7 +139,7 @@ macro_rules! impl_factorial_float {
         $(impl Factorial for $t {
             type Output = Self;
             fn factorial(&self) -> Self::Output{
-                unimplemented!()
+                gamma_function(*self as f64) as Self
             }
         })*
     }
@@ -154,13 +191,17 @@ macro_rules! impl_round_float {
             }
 
             fn with_significant_figures(&mut self, digits: u64) -> Self {
-                let order = (*self).log10().trunc() as u64;
-                let value = if digits <= order {
-                    ((*self) as isize).with_significant_figures(digits) as Self
-                } else {
-                    (*self * (10 as Self).powi((digits - order -1) as i32)).round() / (10 as Self).powi((digits - order -1) as i32)
-                };
+                let value = if *self >= 0. {
 
+                let order = (*self).log10().trunc() as u64;
+                    if digits <= order {
+                        ((*self) as isize).with_significant_figures(digits) as Self
+                    } else {
+                        (*self * (10 as Self).powi((digits - order -1) as i32)).round() / (10 as Self).powi((digits - order -1) as i32)
+                    }
+                } else {
+                    -1. *(*self *-1.).with_significant_figures(digits)
+                };
 
                 *self = value as Self;
                 value

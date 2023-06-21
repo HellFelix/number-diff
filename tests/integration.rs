@@ -1,10 +1,12 @@
 use std::f64::consts::PI;
 
 use number_diff::gamma_function;
+use number_diff::polygamma_function;
 use number_diff::Factorial;
 use number_diff::Function;
 use number_diff::Integrate;
 use number_diff::Round;
+use number_diff::EULER_MASCHERONI;
 
 #[test]
 fn basic_integration() {
@@ -90,5 +92,31 @@ fn gamma_float() {
     assert_eq!(
         gamma_function(20.634).with_significant_figures(SIG_FIGS),
         8.080423451365037632441106519e+17.with_significant_figures(SIG_FIGS)
+    );
+}
+
+#[test]
+fn polygamma() {
+    const SIG_FIGS: u64 = 5;
+
+    // 𝝍1(3) = 0.394934066848...
+    assert_eq!(
+        polygamma_function(3., 1).with_significant_figures(SIG_FIGS),
+        0.394934066848_f64.with_significant_figures(SIG_FIGS)
+    );
+
+    // 𝝍4(3) = -0.0140631913421
+    assert_eq!(
+        polygamma_function(5., 4).with_significant_figures(SIG_FIGS),
+        -0.0140631913421_f64.with_significant_figures(SIG_FIGS)
+    );
+
+    // 𝝍0(1) = -𝛄
+    assert_eq!(polygamma_function(1., 0), -EULER_MASCHERONI);
+
+    // 𝝍0(2) = 0.036489973978576520559023667
+    assert_eq!(
+        polygamma_function(1.5, 0).with_significant_figures(SIG_FIGS),
+        0.036489973978576520559023667_f64.with_significant_figures(SIG_FIGS)
     );
 }

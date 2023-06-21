@@ -250,7 +250,7 @@ pub fn force_unwrap(element: &Arc<Elementary>) -> Elementary {
 }
 
 // basic trig functions
-/// Creates a Function equal to the sine of the passed Function
+/// Creates a [Function](crate::Function) equal to the sine of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ sin(f(x))
 ///
@@ -265,7 +265,7 @@ pub fn sin(func: Function) -> Function {
     Function::from(new_function)
 }
 
-/// Creates a Function equal to the cosine of the passed Function
+/// Creates a [Function](crate::Function) equal to the cosine of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ cos(f(x))
 ///
@@ -280,7 +280,7 @@ pub fn cos(func: Function) -> Function {
     Function::from(new_function)
 }
 
-/// Creates a Function equal to the tangent of the passed Function
+/// Creates a [Function](crate::Function) equal to the tangent of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ tan(f(x))
 ///
@@ -295,7 +295,7 @@ pub fn tan(func: Function) -> Function {
     Function::from(new_function)
 }
 
-/// Creates a Function equal to the secant of the passed Function
+/// Creates a [Function](crate::Function) equal to the secant of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ sec(f(x))
 ///
@@ -310,7 +310,7 @@ pub fn sec(func: Function) -> Function {
     Function::from(new_function)
 }
 
-/// Creates a Function equal to the cosecant of the passed Function
+/// Creates a [Function](crate::Function) equal to the cosecant of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ csc(f(x))
 ///
@@ -325,7 +325,7 @@ pub fn csc(func: Function) -> Function {
     Function::from(new_function)
 }
 
-/// Creates a Function equal to the cotangent of the passed Function
+/// Creates a [Function](crate::Function) equal to the cotangent of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ cot(f(x))
 ///
@@ -341,7 +341,7 @@ pub fn cot(func: Function) -> Function {
 }
 
 // basic arcus functions
-/// Creates a Function equal to the arcsine of the passed Function
+/// Creates a [Function](crate::Function) equal to the arcsine of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ asin(f(x))
 ///
@@ -356,7 +356,7 @@ pub fn asin(func: Function) -> Function {
     Function::from(new_function)
 }
 
-/// Creates a Function equal to the arccosine of the passed Function
+/// Creates a [Function](crate::Function) equal to the arccosine of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ acos(f(x))
 ///
@@ -371,7 +371,7 @@ pub fn acos(func: Function) -> Function {
     Function::from(new_function)
 }
 
-/// Creates a Function equal to the arctangent of the passed Function
+/// Creates a [Function](crate::Function) equal to the arctangent of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ atan(f(x))
 ///
@@ -388,7 +388,7 @@ pub fn atan(func: Function) -> Function {
 
 // hyperbolic functions
 
-/// Creates a Function equal to the hyperbolic sine of the passed Function
+/// Creates a [Function](crate::Function) equal to the hyperbolic sine of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ sinh(f(x))
 ///
@@ -403,7 +403,7 @@ pub fn sinh(func: Function) -> Function {
     Function::from(new_function)
 }
 
-/// Creates a Function equal to the hyperbolic cosine of the passed Function
+/// Creates a [Function](crate::Function) equal to the hyperbolic cosine of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ cosh(f(x))
 ///
@@ -418,7 +418,7 @@ pub fn cosh(func: Function) -> Function {
     Function::from(new_function)
 }
 
-/// Creates a Function equal to the hyperbolic tangent of the passed Function
+/// Creates a [Function](crate::Function) equal to the hyperbolic tangent of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ tanh(f(x))
 ///
@@ -433,7 +433,7 @@ pub fn tanh(func: Function) -> Function {
     Function::from(new_function)
 }
 // abs function
-/// Creates a Function equal to the absolute value of the passed Function
+/// Creates a [Function](crate::Function) equal to the absolute value of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ |f(x)|
 ///
@@ -448,7 +448,7 @@ pub fn abs(func: Function) -> Function {
     Function::from(new_function)
 }
 
-/// Creates a Function equal to the square root of the passed Function
+/// Creates a [Function](crate::Function) equal to the square root of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ √f(x)
 ///
@@ -463,7 +463,7 @@ pub fn sqrt(func: Function) -> Function {
     Function::from(new_function)
 }
 
-/// Creates a Function equal to the nth root of the passed Function
+/// Creates a [Function](crate::Function) equal to the nth root of the passed [Function](crate::Function)
 ///
 /// i.e f(x) ⟹ √f(x)
 ///
@@ -495,7 +495,7 @@ impl Function {
         Ok(())
     }
 
-    /// Turns the given Function instance into a Taylor series expansion centered around the value
+    /// Turns the given [Function](crate::Function) instance into a Taylor series expansion centered around the value
     /// of a.
     ///
     /// If the conversion fails, an [Error::ExpansionError](Error) is returned.
@@ -517,7 +517,7 @@ impl Default for Function {
     }
 }
 
-/// A Function instance can be parsed from any string type using the from method.
+/// A [Function](crate::Function) instance can be parsed from any string type using the from method.
 ///
 /// Example:
 /// ```rust
@@ -550,7 +550,7 @@ impl From<Elementary> for Function {
         Self { func: value }
     }
 }
-/// A Function instance can be obtained from a SeriesExpansion instance using the from method.
+/// A [Function](crate::Function) instance can be obtained from a SeriesExpansion instance using the from method.
 ///
 /// Example:
 /// ```rust

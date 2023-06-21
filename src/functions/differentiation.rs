@@ -168,7 +168,7 @@ impl Elementary {
     }
 }
 
-/// retuns the derivative of the passed Function.
+/// Returns the derivative of the passed [Function](crate::Function).
 pub fn derivative_of(input_func: &Function) -> Function {
     let elem_derivative = input_func.elementary().clone().differentiate();
     Function::from(elem_derivative)

@@ -53,6 +53,7 @@ pub trait Integrate {
 
 const STANDARD_PRECISION: usize = 1000;
 
+/// See [Integrate documentation](crate::Integrate) for usage and examples
 pub struct Integral {
     function: Func,
     lower_bound: Option<f64>,

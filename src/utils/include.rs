@@ -8,3 +8,5 @@ pub use crate::functions::{
 };
 
 pub use crate::functions::{calc::Function, utils::useful_functions::*};
+
+pub use super::consts::*;
