@@ -16,9 +16,9 @@ fn basic_integration() {
     // This is because higher precision cannot be guaranteed with using the standard precision set
     // for the method. Provided that the function is defined for all values between the lower and
     // upper bounds, the method will always return a valid result.
-    let value = function.evaluate_integral(0., PI);
+    let mut value = function.evaluate_integral(0., PI);
 
-    assert_eq!(value, 0.);
+    assert_eq!(value.round_to(10), 0.);
 }
 
 #[test]
@@ -97,7 +97,7 @@ fn gamma_float() {
 
 #[test]
 fn polygamma() {
-    const SIG_FIGS: u64 = 5;
+    const SIG_FIGS: u64 = 4;
 
     // 𝝍1(3) = 0.394934066848...
     assert_eq!(

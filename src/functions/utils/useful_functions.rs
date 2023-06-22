@@ -139,7 +139,7 @@ macro_rules! impl_factorial_float {
         $(impl Factorial for $t {
             type Output = Self;
             fn factorial(&self) -> Self::Output{
-                gamma_function(*self as f64) as Self
+                gamma_function(*self as f64 + 1.) as Self
             }
         })*
     }
@@ -193,12 +193,16 @@ macro_rules! impl_round_float {
             fn with_significant_figures(&mut self, digits: u64) -> Self {
                 let value = if *self >= 0. {
 
-                let order = (*self).log10().trunc() as u64;
-                    if digits <= order {
-                        ((*self) as isize).with_significant_figures(digits) as Self
-                    } else {
-                        (*self * (10 as Self).powi((digits - order -1) as i32)).round() / (10 as Self).powi((digits - order -1) as i32)
-                    }
+                    let order = (*self).log10().trunc() as i32;
+                        if digits as i32 <= order {
+                            ((*self) as isize).with_significant_figures(digits) as Self
+                        } else {
+                            if *self >= 1. {
+                                (*self * (10 as Self).powi((digits as i32 - order -1) as i32)).round() / (10 as Self).powi((digits as i32 - order -1) as i32)
+                            } else {
+                                (*self * (10 as Self).powi((digits as i32 - order) as i32)).round() / (10 as Self).powi((digits as i32 - order) as i32)
+                            }
+                        }
                 } else {
                     -1. *(*self *-1.).with_significant_figures(digits)
                 };

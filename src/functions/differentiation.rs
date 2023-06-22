@@ -152,6 +152,20 @@ impl Elementary {
                 )),
             ),
 
+            // f'(x) * f(x)! * 𝝍0(f(x)+1)
+            Factorial(func) => {
+                (*func).clone().differentiate()
+                    * Factorial(func.clone())
+                    * Polygamma((func + Con(1.)).into(), 0)
+            }
+
+            // 𝜞'(f(x)) = f'(x)*𝜞(f(x))*𝝍0(f(x))
+            Gamma(func) => {
+                (*func).clone().differentiate() * Gamma(func.clone()) * Polygamma(func, 0)
+            }
+            // 𝝍(m)'(f(x)) = f'(x)*𝝍(m+1)(f(x))
+            Polygamma(func, order) => (*func).clone().differentiate() * Polygamma(func, order + 1),
+
             Abs(func) => Div(
                 Arc::new(Mul(func.clone(), Arc::new((*func).clone().differentiate()))),
                 Arc::new(Abs(func)),

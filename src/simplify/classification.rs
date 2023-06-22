@@ -56,6 +56,11 @@ impl Elementary {
             Pow(func1, func2) => func1.is_constant() && func2.is_constant(),
             Log(func1, func2) => func1.is_constant() && func2.is_constant(),
 
+            Factorial(func) => func.is_constant(),
+
+            Gamma(func) => func.is_constant(),
+            Polygamma(func, _) => func.is_constant(),
+
             Abs(func) => func.is_constant(),
 
             Con(_) => true,
@@ -168,6 +173,11 @@ impl Elementary {
             }
             Pow(func1, func2) => func1.is_trig() && func2.is_constant(), // trig^constant
             Log(func1, func2) => func1.is_constant() && func2.is_trig(), // log constant (trig)
+
+            Factorial(_) => false,
+
+            Gamma(_) => false,
+            Polygamma(_, _) => false,
 
             Abs(_) => false,
             Con(_) => false,

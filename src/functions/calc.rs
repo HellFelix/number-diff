@@ -1,4 +1,4 @@
-use crate::Elementary::*;
+use crate::{gamma_function, polygamma_function, Elementary::*, Factorial};
 use std::{
     f64::consts::E,
     iter::Sum,
@@ -44,6 +44,12 @@ pub enum Elementary {
     Pow(Arc<Elementary>, Arc<Elementary>), // of the type f(x)^g(x)
     Log(Arc<Elementary>, Arc<Elementary>), // of the type logb(f(x)) where b = g(x)
 
+    // special functions
+    Factorial(Arc<Elementary>),
+    // gamma function
+    Gamma(Arc<Elementary>),            // of the type 𝜞(f(x))
+    Polygamma(Arc<Elementary>, usize), // Of the type 𝝍m(f(x))
+
     // Absolute value function
     Abs(Arc<Elementary>),
     // Constant function
@@ -83,6 +89,11 @@ impl Elementary {
 
             Pow(func1, func2) => (*func1).clone().call()(x).powf((*func2).clone().call()(x)),
             Log(func1, func2) => (*func2).clone().call()(x).log((*func1).clone().call()(x)),
+
+            Factorial(func) => (*func).clone().call()(x).factorial(),
+
+            Gamma(func) => gamma_function((*func).clone().call()(x)),
+            Polygamma(func, order) => polygamma_function((*func).clone().call()(x), order),
 
             Abs(func) => (*func).clone().call()(x).abs(),
 
