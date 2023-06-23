@@ -16,5 +16,12 @@ fn sig_figs() {
 
     assert_eq!(-4095_i32.with_significant_figures(1), -4000);
 
-    assert_eq!(1234.5678_f64.with_significant_figures(6), 1234.57)
+    assert_eq!(1234.5678_f64.with_significant_figures(6), 1234.57);
+
+    assert_eq!(
+        0.0000000099934_f64.with_significant_figures(4),
+        0.000000009993
+    );
+
+    assert_eq!(0.99999999999999999999_f64.with_significant_figures(10), 1.);
 }

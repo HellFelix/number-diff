@@ -67,6 +67,9 @@ impl Elementary {
                 {
                     chunks.push(interp_slice[i]);
                     cut_index = i + 1;
+                } else if interp_slice[i] == "!" {
+                    chunks.push(&value[cut_index..=i]);
+                    cut_index = i + 1;
                 } else if interp_slice[i] == "x" {
                     chunks.push(&value[cut_index..=i]);
                     cut_index = i + 1;
@@ -77,11 +80,11 @@ impl Elementary {
                     chunks.push("pi");
                     cut_index = i + 1;
                 } else {
-                    // checking for constants
+                    // checking for numbers
                     if let Ok(_) = &value[cut_index..=i].parse::<f64>() {
-                        // find the index at which the number end
+                        // find the index at which the number ends
                         let mut last_index = i;
-                        'index: for j in i + 1..interp_slice.len() {
+                        'index: for j in i + 1..=interp_slice.len() {
                             if let Ok(_) = &value[cut_index..j].parse::<f64>() {
                                 last_index = j - 1;
                             } else {
@@ -106,6 +109,8 @@ impl Elementary {
         if chunks.is_empty() {
             chunks.push(value);
         }
+
+        println!("{chunks:?}");
 
         chunks
     }
@@ -151,6 +156,13 @@ impl Elementary {
                     }
                 }
 
+                continue;
+            }
+
+            // the factorial function (x ↦ x!) is by convention written in "postfix" notation (i.e.
+            // it taeks precedence over normal operations)
+            if functions.contains(&ElemRef::Factorial) {
+                iterate_operation(&mut functions, ElemRef::Factorial)?;
                 continue;
             }
 
@@ -236,6 +248,7 @@ impl Elementary {
             // also constants
             "e" => Ok(ElemRef::Function(Con(E))),
             "pi" => Ok(ElemRef::Function(Con(PI))),
+            "!" => Ok(ElemRef::Factorial),
             _ => {
                 // if we do not have an operation, we must have a function consisting of a function
                 // identifier and its contents
@@ -338,19 +351,38 @@ fn iterate_operation(functions: &mut Vec<ElemRef>, operation: ElemRef) -> Result
                             ElemRef::Function(functions[i + 1].clone().convert()? * (-1 as f64))
                         }
                     }
+                    ElemRef::Factorial => {
+                        if i > 0 {
+                            ElemRef::Function(Factorial(functions[i - 1].clone().convert()?.into()))
+                        } else {
+                            return Err(Error::ParseError(String::from(
+                                "Factorial function must be applied to another function",
+                            )));
+                        }
+                    }
                     _ => unimplemented!("No such operation"), // this point shouldn't be reached
                 };
 
-                // the operation itself as well as the functions surrounding it must be removed
-                functions.remove(i + 1);
-                functions.remove(i);
-                if i > 0 {
+                if operation == ElemRef::Factorial {
+                    println!("testing - {replacement_func:?}");
+                    // the factorial notation is rather unique, because it always follows directly
+                    // after the function upon which it acts.
+                    functions.remove(i);
                     functions.remove(i - 1);
-                    // the combined new function is inserted in the place of the previous functions
-                    functions.insert(i - 1, replacement_func);
+
+                    functions.insert(i - 1, replacement_func)
                 } else {
-                    // this is strictly for when a negative number is implied as seen above
-                    functions.insert(i, replacement_func)
+                    // the operation itself as well as the functions surrounding it must be removed
+                    functions.remove(i + 1);
+                    functions.remove(i);
+                    if i > 0 {
+                        functions.remove(i - 1);
+                        // the combined new function is inserted in the place of the previous functions
+                        functions.insert(i - 1, replacement_func);
+                    } else {
+                        // this is strictly for when a negative number is implied as seen above
+                        functions.insert(i, replacement_func)
+                    }
                 }
             }
         }
@@ -367,6 +399,7 @@ enum ElemRef {
     Div,
     Add,
     Sub,
+    Factorial,
 }
 impl ElemRef {
     fn convert(self) -> Result<Elementary, Error> {
