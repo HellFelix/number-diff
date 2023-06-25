@@ -369,7 +369,6 @@ fn iterate_operation(functions: &mut Vec<ElemRef>, operation: ElemRef) -> Result
                     // after the function upon which it acts.
                     functions.remove(i);
                     functions.remove(i - 1);
-
                     functions.insert(i - 1, replacement_func)
                 } else {
                     // the operation itself as well as the functions surrounding it must be removed

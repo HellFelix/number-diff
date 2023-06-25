@@ -2,6 +2,12 @@ use std::f64::{consts::E, NAN};
 
 use crate::{Elementary::*, Integrate, EULER_MASCHERONI};
 
+/// An infinit number in the complex plane with an unknown or undefined complex argument.
+///
+/// For instance will approach complex infinity as x approaches 0. The limit could be either plus
+/// or minus infinity wich makes its magnitude infinit and its complex argument undefined.
+///
+/// See [this article](https://mathworld.wolfram.com/ComplexInfinity.html) for further information.
 pub const COMPLEX_INFINITY: f64 = NAN;
 
 /// returns n! for numbers n ∈ ℕ
@@ -89,7 +95,7 @@ pub fn digamma_function(z: f64) -> f64 {
 /// * x! = x*(x-1)!
 /// * 0! = 1
 ///
-/// for x ∈ ℝ.
+/// for x ∈ ℕ.
 ///
 /// The definition of the factorial function can be expanded to the domain of all real numbers
 /// using the [gamma function](https://en.wikipedia.org/wiki/Gamma_function):
