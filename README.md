@@ -83,3 +83,7 @@
  | Taylor series       | Stable ✅ | get_taylor_expansion()|
  | Maclaurin series    | Stable ✅ | get_maclaurin_expansion()|
  | Fourier series      | Unimplemented ❌| N/A |
+
+ ## License
+
+The crate is licensed under the Apache License 2.0. For full license description, check out the [License document](https://github.com/HellFelix/number-diff/blob/main/LICENSE)!

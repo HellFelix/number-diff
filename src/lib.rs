@@ -87,9 +87,6 @@
 //! | Taylor series       | Stable ✅ | [get_taylor_expansion()](crate::Function::get_taylor_expansion)|
 //! | Maclaurin series    | Stable ✅ | [get_maclaurin_expansion()](crate::Function::get_maclaurin_expansion)|
 //! | Fourier series      | Unimplemented ❌| N/A |
-//!
-//!
-//!
 
 #![cfg_attr(feature = "nightly", feature(unboxed_closures))]
 #![cfg_attr(feature = "nightly", feature(fn_traits))]
