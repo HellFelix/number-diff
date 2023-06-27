@@ -6,24 +6,35 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
+/// [SeriesExpansion](crate::SeriesExpansion) is an abstraction of the series expansion created when using
 pub enum SeriesExpansion {
+    /// A Taylor series expansion centered around 0.
     MacLaurin(Elementary),
+    /// An approximation of an analytic function centered around some value using a polynomial.
+    /// See [this article](https://en.wikipedia.org/wiki/Taylor_series) for further information.
     Taylor(Elementary),
-    // Fourier,
-    // Dirichlet,
+    /// An approximation of a periodic function into a sum of trigonometric functions.
+    /// See [this article](https://en.wikipedia.org/wiki/Fourier_series) for further information.
+    Fourier(Elementary),
 }
 impl SeriesExpansion {
-    pub fn get_function(&self) -> Function {
+    /// Returns a [Function](crate::Function) instance from the provided
+    /// [SeriesExpansion](crate::SeriesExpansion) instance, consuming it in the process.
+    pub fn get_function(self) -> Function {
         match self {
-            SeriesExpansion::MacLaurin(elem) => Function::from(elem.clone()),
-            SeriesExpansion::Taylor(elem) => Function::from(elem.clone()),
+            Self::MacLaurin(elem) => Function::from(elem),
+            Self::Taylor(elem) => Function::from(elem),
+            Self::Fourier(elem) => Function::from(elem),
         }
     }
 
-    pub fn get_elementary(&self) -> Elementary {
+    /// Returns a [Elementary](crate::Elementary) instance from the provided
+    /// [SeriesExpansion](crate::SeriesExpansion) instance, consuming it in the process.
+    pub fn get_elementary(self) -> Elementary {
         match self {
-            SeriesExpansion::MacLaurin(elem) => elem.clone(),
-            SeriesExpansion::Taylor(elem) => elem.clone(),
+            Self::MacLaurin(elem) => elem,
+            Self::Taylor(elem) => elem,
+            Self::Fourier(elem) => elem,
         }
     }
 }

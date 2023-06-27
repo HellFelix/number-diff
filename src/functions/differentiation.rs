@@ -183,6 +183,16 @@ impl Elementary {
 }
 
 /// Returns the derivative of the passed [Function](crate::Function).
+///
+/// Example:
+/// ```rust
+/// let sin = Function::from("sin(x)");
+///
+/// let sin_derivative = derivative_of(&sin);
+/// // sin(x)' = cos(x)
+/// // cos(0) = 1
+/// assert_eq!(sin_derivative.call(0.), 1.)
+/// ```
 pub fn derivative_of(input_func: &Function) -> Function {
     let elem_derivative = input_func.elementary().clone().differentiate();
     Function::from(elem_derivative)

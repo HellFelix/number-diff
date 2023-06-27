@@ -110,8 +110,6 @@ impl Elementary {
             chunks.push(value);
         }
 
-        println!("{chunks:?}");
-
         chunks
     }
 

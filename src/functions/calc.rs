@@ -1,10 +1,5 @@
 use crate::{gamma_function, polygamma_function, Elementary::*, Factorial};
-use std::{
-    f64::consts::E,
-    iter::Sum,
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub},
-    sync::Arc,
-};
+use std::{f64::consts::E, sync::Arc};
 
 use crate::{Error, Func};
 
@@ -101,153 +96,6 @@ impl Elementary {
 
             X => f()(x),
         })
-    }
-}
-// operation implementations for Elementary enum
-impl Add for Elementary {
-    type Output = Self;
-    fn add(self, rhs: Self) -> Self::Output {
-        if let Con(numb) = self {
-            if numb == 0. {
-                return rhs;
-            }
-        } else if let Con(numb) = rhs {
-            if numb == 0. {
-                return self;
-            }
-        }
-        Self::Add(Arc::new(self), Arc::new(rhs))
-    }
-}
-impl Add<&mut Self> for Elementary {
-    type Output = Self;
-    fn add(self, rhs: &mut Self) -> Self::Output {
-        self + rhs.clone()
-    }
-}
-impl AddAssign for Elementary {
-    fn add_assign(&mut self, rhs: Self) {
-        *self = rhs + self.clone();
-    }
-}
-impl Sub for Elementary {
-    type Output = Self;
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self::Sub(Arc::new(self), Arc::new(rhs))
-    }
-}
-impl Mul for Elementary {
-    type Output = Self;
-    fn mul(self, rhs: Self) -> Self::Output {
-        if let Con(numb) = self {
-            if numb == 1. {
-                return rhs;
-            } else if numb == 0. {
-                return self;
-            }
-        } else if let Con(numb) = rhs {
-            if numb == 1. {
-                return self;
-            } else if numb == 0. {
-                return rhs;
-            }
-        }
-        Self::Mul(Arc::new(self), Arc::new(rhs))
-    }
-}
-impl Mul<&mut Self> for Elementary {
-    type Output = Self;
-    fn mul(self, rhs: &mut Self) -> Self::Output {
-        self * rhs.clone()
-    }
-}
-impl MulAssign for Elementary {
-    fn mul_assign(&mut self, rhs: Self) {
-        *self = rhs * self.clone();
-    }
-}
-impl Div for Elementary {
-    type Output = Self;
-    fn div(self, rhs: Self) -> Self::Output {
-        Self::Div(Arc::new(self), Arc::new(rhs))
-    }
-}
-impl Div<&mut Self> for Elementary {
-    type Output = Self;
-    fn div(self, rhs: &mut Self) -> Self::Output {
-        self / rhs.clone()
-    }
-}
-impl DivAssign for Elementary {
-    fn div_assign(&mut self, rhs: Self) {
-        *self = self.clone() / rhs;
-    }
-}
-
-// operation implementations for Elementary enum (with constants)
-impl Add<f64> for Elementary {
-    type Output = Self;
-    fn add(self, rhs: f64) -> Self::Output {
-        Self::Add(Arc::new(self), Arc::new(Con(rhs)))
-    }
-}
-impl Sub<f64> for Elementary {
-    type Output = Self;
-    fn sub(self, rhs: f64) -> Self::Output {
-        Self::Sub(Arc::new(self), Arc::new(Con(rhs)))
-    }
-}
-impl Div<f64> for Elementary {
-    type Output = Self;
-    fn div(self, rhs: f64) -> Self::Output {
-        Self::Div(Arc::new(self), Arc::new(Con(rhs)))
-    }
-}
-impl Mul<f64> for Elementary {
-    type Output = Self;
-    fn mul(self, rhs: f64) -> Self::Output {
-        Self::Mul(Arc::new(self), Arc::new(Con(rhs)))
-    }
-}
-
-// operation implementations for Arc<Elementary>
-impl Add<Elementary> for Arc<Elementary> {
-    type Output = Elementary;
-    fn add(self, rhs: Elementary) -> Self::Output {
-        let elem = force_unwrap(&self);
-        elem + rhs
-    }
-}
-impl Sub<Elementary> for Arc<Elementary> {
-    type Output = Elementary;
-    fn sub(self, rhs: Elementary) -> Self::Output {
-        let elem = force_unwrap(&self);
-        elem - rhs
-    }
-}
-impl Mul<Elementary> for Arc<Elementary> {
-    type Output = Elementary;
-    fn mul(self, rhs: Elementary) -> Self::Output {
-        let elem = force_unwrap(&self);
-        elem * rhs
-    }
-}
-impl Div<Elementary> for Arc<Elementary> {
-    type Output = Elementary;
-    fn div(self, rhs: Elementary) -> Self::Output {
-        let elem = force_unwrap(&self);
-        elem / rhs
-    }
-}
-
-impl Sum<Self> for Elementary {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        let terms: Vec<Elementary> = iter.collect();
-        let mut res = terms[0].clone();
-        for i in 1..terms.len() {
-            res += terms[i].clone();
-        }
-        res
     }
 }
 
@@ -421,7 +269,7 @@ pub fn sinh(func: Function) -> Function {
 /// Example:
 /// ```rust
 ///     let x = function::default();
-///     let cosh_of_x= cosh(x);
+///     let cosh_of_x = cosh(x);
 ///     assert_eq!(cosh_of_x.call(0.), 1.);
 /// ```
 pub fn cosh(func: Function) -> Function {
@@ -436,7 +284,7 @@ pub fn cosh(func: Function) -> Function {
 /// Example:
 /// ```rust
 ///     let x = function::default();
-///     let tanh_of_x= tanh(x);
+///     let tanh_of_x = tanh(x);
 ///     assert_eq!(tanh_of_x.call(0.), 0.);
 /// ```
 pub fn tanh(func: Function) -> Function {
@@ -451,11 +299,27 @@ pub fn tanh(func: Function) -> Function {
 /// Example:
 /// ```rust
 ///     let x = function::default();
-///     let abs_of_x= abs(x);
+///     let abs_of_x = abs(x);
 ///     assert_eq!(abs_of_x.call(-1.), 1.);
 /// ```
 pub fn abs(func: Function) -> Function {
     let new_function = Abs(Arc::new(func.elementary()));
+    Function::from(new_function)
+}
+
+// ln function
+/// Creates a [Function](crate::Function) equal to the natural logarithm (base e) of the passed [Function](crate::Function)
+///
+/// i.e f(x) ⟹  ln(f(x))
+///
+/// Example:
+/// ```rust
+///     let x = function::default();
+///     let ln_of_x = ln(x);
+///     assert_eq!(ln_of_x.call(E), 1.);
+/// ```
+pub fn ln(func: Function) -> Function {
+    let new_function = Log(Con(E).into(), func.elementary().into());
     Function::from(new_function)
 }
 
@@ -466,11 +330,26 @@ pub fn abs(func: Function) -> Function {
 /// Example:
 /// ```rust
 ///     let x = function::default();
-///     let sqrt_of_x= sqrt(x);
+///     let sqrt_of_x = sqrt(x);
 ///     assert_eq!(sqrt_of_x.call(4.), 2.);
 /// ```
 pub fn sqrt(func: Function) -> Function {
     let new_function = Pow(Arc::new(func.elementary()), Arc::new(Con(0.5)));
+    Function::from(new_function)
+}
+
+/// Creates a [Function](crate::Function) equal to the factorial of the passed [Function](crate::Function)
+///
+/// i.e f(x) ⟹  f(x)!
+///
+/// Example:
+/// ```rust
+///     let x = function::default();
+///     let factorial_of_x = factorial(x);
+///     assert_eq!(factorial_of_x.call(4.), 2.);
+/// ```
+pub fn factorial(func: Function) -> Function {
+    let new_function = Factorial(func.elementary().into());
     Function::from(new_function)
 }
 
@@ -481,7 +360,7 @@ pub fn sqrt(func: Function) -> Function {
 /// Example:
 /// ```rust
 ///     let x = function::default();
-///     let nth_root_of_x= nth_root(x, 3);
+///     let nth_root_of_x = nth_root(x, 3);
 ///     assert_eq!(nth_root_of_x.call(8.), 2.);
 /// ```
 pub fn nth_root(func: Function, n: f64) -> Function {
@@ -494,16 +373,36 @@ pub struct Function {
 }
 
 impl Function {
+    /// Returns the Elementary absraction of the Function instance
     pub fn elementary(&self) -> Elementary {
         self.func.clone()
+    }
+
+    /// Sets the function to represent the provided Elementary abstraction
+    pub fn set_function(&mut self, element: Elementary) {
+        self.func = element;
     }
 
     /// Turns self into the derivative of self
     ///
     /// i.e. f(x) ⟹ f'(x)
-    pub fn differentiate(&mut self) -> Result<(), Error> {
-        self.func = self.elementary().to_owned().derivative()?;
-        Ok(())
+    ///
+    /// Example:
+    /// ```rust
+    /// let mut function = Function::from("cosh(x)");
+    ///
+    /// // take derivative
+    /// function.differentiate();
+    /// // cosh(x)' = sinh(x)
+    /// // sinh(0) = 0
+    /// assert_eq!(function.call(0.), 0.);
+    /// ```
+    ///
+    /// Do also note that differentiating a function will not simplify the result. This is to make
+    /// sure that this method can never fail, but it does also mean that there are instances where
+    /// the resulting derivative will return [NaN](f64::NAN) for certain values.
+    pub fn differentiate(&mut self) {
+        self.func = self.elementary().to_owned().derivative_unsimplified();
     }
 
     /// Turns the given [Function](crate::Function) instance into a Taylor series expansion centered around the value
@@ -515,9 +414,14 @@ impl Function {
         Ok(())
     }
 
-    ///
+    /// Returns a Taylor expansion of the provided order of the function centered around the provided value a.
     pub fn get_taylor_expansion(&self, order: u8, a: f64) -> Result<SeriesExpansion, Error> {
         self.func.expand_taylor(order, a)
+    }
+
+    /// Returns a Maclaurin expansion of the provided order.
+    pub fn get_maclaurin_expansion(&self, order: u8) -> Result<SeriesExpansion, Error> {
+        self.func.expand_maclaurin(order)
     }
 }
 impl Default for Function {
@@ -589,6 +493,6 @@ impl From<SeriesExpansion> for Function {
 }
 impl From<&SeriesExpansion> for Function {
     fn from(value: &SeriesExpansion) -> Self {
-        value.get_function()
+        (*value).clone().get_function()
     }
 }
