@@ -33,7 +33,7 @@
  | tanh      | "tanh(_)"            | tanh()|
  | natural log|"ln(_)"            | ln()|
  | absolute value|"abs(_)"           | abs()|
- | square root|"cosh(_)"            | cosh()|
+ | square root|"sqrt(_)"            | sqrt()|
  | factorial | "_!"              | factorial()|
  | addition | "_ + _ "            | +|
  | subtraction| "_ - _"            | -|

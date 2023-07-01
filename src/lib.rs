@@ -35,7 +35,7 @@
 //! | tanh      | "tanh(_)"            | [tanh()](crate::tanh) |
 //! | natural log|"ln(_)"            | [ln()](crate::ln) |
 //! | absolute value|"abs(_)"           | [abs()](crate::abs) |
-//! | square root|"cosh(_)"            | [cosh()](crate::cosh) |
+//! | square root|"sqrt(_)"            | [sqrt()](crate::sqrt) |
 //! | factorial | "_!"              | [factorial()](crate::factorial) |
 //! | addition | "_ + _ "            | [+](core::ops::Add) |
 //! | subtraction| "_ - _"            | [-](core::ops::Sub)  |
