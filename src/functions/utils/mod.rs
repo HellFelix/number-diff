@@ -7,3 +7,6 @@ pub mod calc_nightly;
 
 #[cfg(feature = "default")]
 pub mod calc_default;
+
+#[cfg(feature = "serialize")]
+pub mod calc_serialize;
