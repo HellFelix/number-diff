@@ -77,7 +77,7 @@ impl serde::Serialize for Elementary {
 
             Con(numb) => serializer.serialize_newtype_variant("Elementary", 22, "Con", &(*numb)),
 
-            X => serializer.serialize_unit_variant("Elementary", 23, "X"),
+            X => serializer.serialize_unit_variant("Elementary", 23, "X: {}"),
         }
     }
 }
