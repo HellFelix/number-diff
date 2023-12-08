@@ -19,4 +19,10 @@ fn main() {
     // cosh(x)' = sinh(x)
     // sinh(0) = 0
     assert_eq!(function.call(0.), 0.);
+
+    // Derivatives can also be directly parsed from a string
+    let parsed_derivative = Function::from("D(tanh(x))");
+    // tanh(x)' = 1/cosh^2(x)
+    // 1/cosh^2(0) = 1
+    assert_eq!(parsed_derivative.call(0.), 1.);
 }

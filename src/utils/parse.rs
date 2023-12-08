@@ -307,6 +307,9 @@ impl Elementary {
                         Arc::new(Self::to_elementary(&cont)?),
                         Arc::new(Con(0.5)),
                     ))),
+                    "d" => Ok(ElemRef::Function(
+                        Self::to_elementary(&cont)?.derivative_unsimplified(),
+                    )),
                     _ => Err(Error::ParseError(format!(
                         "Function identifier '{func}' not recognized"
                     ))),
